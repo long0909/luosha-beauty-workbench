@@ -19,7 +19,8 @@
 - 饼图：pieChartFloat()支持点击扇区筛选 + 联动更新
 
 ## 部署
-- CloudStudio沙箱部署，当前链接: https://6736465c3ec046fb8a39c1283cbff847.bj2.agentos-app.net
+- GitHub Pages永久部署: https://long0909.github.io/luosha-beauty-workbench/
+- 仓库地址: https://github.com/long0909/luosha-beauty-workbench
 - 每次更新后sw.js cache版本号需递增
 
 ## 用户偏好

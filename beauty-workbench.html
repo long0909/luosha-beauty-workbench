@@ -26,6 +26,7 @@ body {
   background:var(--bg); color:var(--text); max-width:500px; margin:0 auto;
   min-height:100vh; padding-bottom:20px; -webkit-tap-highlight-color:transparent;
   -webkit-user-select:none; user-select:none;
+@media(min-width:768px){body{-webkit-user-select:auto;user-select:auto;}}
 }
 .header {
   background:linear-gradient(135deg,#e8537a,#f06292); color:#fff;
@@ -195,6 +196,30 @@ textarea { resize:vertical; min-height:60px; }
 .generated-script .gs-field { font-size:13px; line-height:1.6; margin-bottom:3px; }
 .generated-script .gs-label { font-weight:600; color:var(--text-secondary); }
 .gs-total-time { text-align:right; font-size:14px; font-weight:700; color:var(--primary); margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); }
+.storyboard-card { background:var(--bg); border-radius:var(--radius-sm); padding:12px; margin-bottom:10px; border:1.5px solid var(--border); }
+.storyboard-card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.storyboard-card-num { font-size:14px; font-weight:700; color:var(--primary); }
+.storyboard-fields { display:grid; grid-template-columns:1fr; gap:8px; }
+.sb-field { }
+.sb-field label { display:block; font-size:11px; font-weight:600; color:var(--text-secondary); margin-bottom:3px; }
+.sb-field input, .sb-field textarea, .sb-field select { width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:8px; font-size:13px; font-family:inherit; background:#fff; }
+.sb-field input:focus, .sb-field textarea:focus, .sb-field select:focus { border-color:var(--primary); outline:none; }
+.sb-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.req-star { color:var(--danger); margin-left:2px; }
+.filter-label { font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:3px; display:block; }
+.filter-row { display:flex; gap:8px; margin-bottom:12px; }
+.filter-row .filter-col { flex:1; }
+.filter-row select { width:100%; }
+@media(min-width:768px){
+  body { max-width:900px; }
+  .fab { right:calc(50% - 430px); }
+  .storyboard-fields { grid-template-columns:1fr 1fr 1fr; }
+  .sb-field-full { grid-column:1/-1; }
+  .modal { max-width:700px; margin:0 auto; border-radius:20px; }
+  .summary-row { grid-template-columns:1fr 1fr 1fr 1fr; }
+  .quick-grid { grid-template-columns:1fr 1fr 1fr 1fr 1fr; }
+  .material-grid { grid-template-columns:1fr 1fr 1fr; }
+}
 .material-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .material-card { background:var(--bg); border-radius:var(--radius-sm); overflow:hidden; position:relative; }
 .material-card img { width:100%; height:120px; object-fit:cover; display:block; }
@@ -209,8 +234,7 @@ textarea { resize:vertical; min-height:60px; }
 .pub-board-item { background:var(--bg); border-radius:var(--radius-sm); padding:10px; text-align:center; }
 .pub-board-item .pb-num { font-size:20px; font-weight:700; }
 .pub-board-item .pb-label { font-size:11px; color:var(--text-secondary); margin-top:2px; }
-.filter-row { display:flex; gap:8px; margin-bottom:12px; }
-.filter-row select { flex:1; }
+
 .home-cover { position:relative; background:linear-gradient(135deg,#e8537a,#f06292); color:#fff; border-radius:var(--radius); padding:30px 20px; text-align:center; margin-bottom:12px; box-shadow:var(--shadow); background-size:cover; background-position:center; }
 .home-logo { font-size:46px; }
 .home-cover h2 { font-size:21px; font-weight:700; margin-top:8px; }
@@ -417,7 +441,10 @@ function gid(){return Date.now().toString(36)+Math.random().toString(36).substr(
 function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.getElementById('toastContainer').appendChild(t);setTimeout(()=>t.remove(),2000);}
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function onSearchInput(key,val){searchVals[key]=val;refreshView(currentView);}
+let isComposing=false;
+function onSearchInput(key,val){if(isComposing)return;searchVals[key]=val;refreshView(currentView);}
+function onCompStart(){isComposing=true;}
+function onCompEnd(key,val){isComposing=false;searchVals[key]=val;refreshView(currentView);}
 function restoreSearchFocus(id,val){const inp=document.getElementById(id);if(inp){inp.focus();inp.setSelectionRange(val.length,val.length);}}
 // ============ DRAWER ============
 function toggleDrawer(){document.getElementById('drawer').classList.toggle('open');document.getElementById('drawerOverlay').classList.toggle('open');}
@@ -509,11 +536,19 @@ function renderDayAppt(){
     h+='<div class="appt-item"><div class="appt-time">'+a.time+'</div><div class="appt-info"><div class="appt-name">'+(cu?cu.name:a.customerName||'未知')+'</div><div class="appt-service">'+a.service+'</div></div><span class="appt-status '+a.status+'">'+(sl[a.status]||a.status)+'</span><button class="btn btn-xs btn-outline" onclick="editAppt(\''+a.id+'\')">✏️</button><button class="btn btn-xs btn-danger" onclick="delAppt(\''+a.id+'\')">🗑</button></div>';});
   c.innerHTML=h;
 }
-function openApptForm(a){editingId=a?a.id:null;const co=data.customers.map(c=>'<option value="'+c.id+'" '+(a&&a.customerId===c.id?'selected':'')+'>'+c.name+'</option>').join('');const sl=['confirmed','completed','cancelled'];const sll={confirmed:'已确认',completed:'已完成',cancelled:'已取消'};
-  document.getElementById('modalContent').innerHTML='<h3>'+(a?'编辑':'添加')+'档期</h3><div class="form-group"><label>客户</label><select id="fAc">'+(co||'<option>--请先添加客户--</option>')+'</select></div><div class="form-group"><label>客户姓名(手动)</label><input id="fAcn" value="'+(a?a.customerName||'':'')+'"></div><div class="form-row"><div class="form-group"><label>日期</label><input type="date" id="fAd" value="'+(a?a.date:selectedDate)+'"></div><div class="form-group"><label>时间</label><input type="time" id="fAt" value="'+(a?a.time:'10:00')+'"></div></div><div class="form-group"><label>服务项目</label><input id="fAs" value="'+(a?a.service:'')+'"></div><div class="form-group"><label>状态</label><select id="fAst">'+sl.map(s=>'<option value="'+s+'" '+(a&&a.status===s?'selected':'')+'>'+sll[s]+'</option>').join('')+'</select></div><div class="form-group"><label>备注</label><textarea id="fAn">'+(a?a.notes||'':'')+'</textarea></div><div class="modal-actions"><button class="btn btn-outline btn-block" onclick="closeModal()">取消</button><button class="btn btn-primary btn-block" onclick="saveAppt()">保存</button></div>';
+function openApptForm(a){editingId=a?a.id:null;
+  const custOpts=data.customers.map(c=>'<option value="'+escHtml(c.name)+'">').join('');
+  const sl=['confirmed','completed','cancelled'];const sll={confirmed:'已确认',completed:'已完成',cancelled:'已取消'};
+  const curName=a?(a.customerName||data.customers.find(x=>x.id===a.customerId)?.name||''):'';
+  document.getElementById('modalContent').innerHTML='<h3>'+(a?'编辑':'添加')+'档期</h3><div class="form-group"><label>客户姓名<span class="req-star">*</span>（可输入匹配已有客户）</label><input id="fAcn" list="apptCustList" value="'+escHtml(curName)+'" placeholder="输入或选择客户"><datalist id="apptCustList">'+custOpts+'</datalist></div><div class="form-row"><div class="form-group"><label>日期<span class="req-star">*</span></label><input type="date" id="fAd" value="'+(a?a.date:selectedDate)+'"></div><div class="form-group"><label>时间<span class="req-star">*</span></label><input type="time" id="fAt" value="'+(a?a.time:'10:00')+'"></div></div><div class="form-group"><label>服务项目<span class="req-star">*</span></label><input id="fAs" value="'+escHtml(a?a.service:'')+'" placeholder="如：日常妆、新娘跟妆"></div><div class="form-group"><label>状态</label><select id="fAst">'+sl.map(s=>'<option value="'+s+'" '+(a&&a.status===s?'selected':'')+'>'+sll[s]+'</option>').join('')+'</select></div><div class="form-group"><label>备注</label><textarea id="fAn">'+escHtml(a?a.notes||'':'')+'</textarea></div><div class="modal-actions"><button class="btn btn-outline btn-block" onclick="closeModal()">取消</button><button class="btn btn-primary btn-block" onclick="saveAppt()">保存</button></div>';
   document.getElementById('modalOverlay').style.display='flex';}
-function saveAppt(){const ap={id:editingId||gid(),customerId:document.getElementById('fAc').value||'',customerName:document.getElementById('fAcn').value.trim(),date:document.getElementById('fAd').value,time:document.getElementById('fAt').value,service:document.getElementById('fAs').value.trim(),status:document.getElementById('fAst').value,notes:document.getElementById('fAn').value.trim()};
-  if(!ap.date||!ap.time||!ap.service){toast('请填写完整');return;}if(editingId){const ix=data.appointments.findIndex(x=>x.id===editingId);if(ix>=0)data.appointments[ix]=ap;}else data.appointments.push(ap);
+function saveAppt(){const cname=document.getElementById('fAcn').value.trim();
+  if(!cname){toast('请输入客户姓名');return;}
+  const matched=data.customers.find(c=>c.name===cname);
+  const ap={id:editingId||gid(),customerId:matched?matched.id:'',customerName:cname,date:document.getElementById('fAd').value,time:document.getElementById('fAt').value,service:document.getElementById('fAs').value.trim(),status:document.getElementById('fAst').value,notes:document.getElementById('fAn').value.trim()};
+  if(!ap.date){toast('请选择日期');return;}
+  if(!ap.time){toast('请选择时间');return;}
+  if(!ap.service){toast('请输入服务项目');return;}if(editingId){const ix=data.appointments.findIndex(x=>x.id===editingId);if(ix>=0)data.appointments[ix]=ap;}else data.appointments.push(ap);
   save();closeModal();refreshView('schedule');toast(editingId?'已更新':'已添加');editingId=null;}
 function editAppt(id){const a=data.appointments.find(x=>x.id===id);if(a)openApptForm(a);}
 function delAppt(id){if(!confirm('确定删除？'))return;data.appointments=data.appointments.filter(x=>x.id!==id);save();refreshView('schedule');toast('已删除');}
@@ -523,7 +558,7 @@ function renderCustomers(div){
   let cs=[...data.customers].sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
   if(q)cs=cs.filter(c=>c.name.toLowerCase().includes(q)||(c.phone||'').includes(q));
   const sll={dry:'干性',oily:'油性',combination:'混合',normal:'中性',sensitive:'敏感'};
-  div.innerHTML='<div class="card"><div class="card-header"><h3>👥 客户资料</h3><span class="count">'+data.customers.length+'</span></div><div class="search-bar"><input id="cSearch" value="'+escHtml(searchVals.customers)+'" placeholder="🔍 搜索姓名或手机..." oninput="onSearchInput(\'customers\',this.value)"></div>'+(cs.length?cs.map(c=>'<div class="list-item"><div class="item-avatar">'+c.name[0]+'</div><div class="item-info"><div class="item-title">'+c.name+(c.age?' · '+c.age+'岁':'')+'</div><div class="item-sub">📱 '+(c.phone||'未填')+(c.skinType?' · '+(sll[c.skinType]||c.skinType):'')+'</div>'+(c.notes?'<div class="item-sub">📝 '+c.notes+'</div>':'')+'</div><div class="item-actions"><button class="btn btn-xs btn-outline" onclick="editCustomer(\''+c.id+'\')">✏️</button><button class="btn btn-xs btn-danger" onclick="delCustomer(\''+c.id+'\')">🗑</button></div></div>').join(''):'<div class="empty-state"><div class="empty-icon">👤</div><p>暂无客户</p></div>')+'</div>';
+  div.innerHTML='<div class="card"><div class="card-header"><h3>👥 客户资料</h3><span class="count">'+data.customers.length+'</span></div><div class="search-bar"><input id="cSearch" value="'+escHtml(searchVals.customers)+'" placeholder="🔍 搜索姓名或手机..." oninput="onSearchInput(\'customers\',this.value)" oncompositionstart="onCompStart()" oncompositionend="onCompEnd(\'customers\',this.value)"></div>'+(cs.length?cs.map(c=>'<div class="list-item"><div class="item-avatar">'+c.name[0]+'</div><div class="item-info"><div class="item-title">'+c.name+(c.age?' · '+c.age+'岁':'')+'</div><div class="item-sub">📱 '+(c.phone||'未填')+(c.skinType?' · '+(sll[c.skinType]||c.skinType):'')+'</div>'+(c.notes?'<div class="item-sub">📝 '+c.notes+'</div>':'')+'</div><div class="item-actions"><button class="btn btn-xs btn-outline" onclick="editCustomer(\''+c.id+'\')">✏️</button><button class="btn btn-xs btn-danger" onclick="delCustomer(\''+c.id+'\')">🗑</button></div></div>').join(''):'<div class="empty-state"><div class="empty-icon">👤</div><p>暂无客户</p></div>')+'</div>';
   restoreSearchFocus('cSearch',searchVals.customers);
 }
 function editCustomer(id){const c=data.customers.find(x=>x.id===id);if(c)openCustomerForm(c);}
@@ -541,7 +576,7 @@ function renderProducts(div){
   if(q)ps=ps.filter(p=>p.name.toLowerCase().includes(q)||(p.brand||'').toLowerCase().includes(q));
   const ls=data.products.filter(p=>p.stock<=p.minStock);
   let al=ls.length?'<div class="alert-bar alert-warning">⚠️ 库存预警：'+ls.map(p=>p.name+'('+p.stock+')').join('、')+'</div>':'';
-  div.innerHTML='<div class="card"><div class="card-header"><h3>📦 产品库存</h3><span class="count">'+data.products.length+'</span></div>'+al+'<div class="search-bar"><input id="pSearch" value="'+escHtml(searchVals.inventory)+'" placeholder="🔍 搜索产品..." oninput="onSearchInput(\'inventory\',this.value)"></div>'+(ps.length?ps.map(p=>{const sc=p.stock<=p.minStock?'tag-red':p.stock<=p.minStock*2?'tag-orange':'tag-green';return'<div class="list-item"><div class="item-avatar">'+p.name[0]+'</div><div class="item-info"><div class="item-title">'+p.name+'</div><div class="item-sub">'+(p.brand?p.brand+' · ':'')+(p.category||'')+' · ¥'+p.price+'</div></div><span class="tag '+sc+'">库存'+p.stock+'</span><div class="item-actions"><button class="btn btn-xs btn-outline" onclick="editProduct(\''+p.id+'\')">✏️</button><button class="btn btn-xs btn-danger" onclick="delProduct(\''+p.id+'\')">🗑</button></div></div>'}).join(''):'<div class="empty-state"><div class="empty-icon">📦</div><p>暂无产品</p></div>')+'</div>';
+  div.innerHTML='<div class="card"><div class="card-header"><h3>📦 产品库存</h3><span class="count">'+data.products.length+'</span></div>'+al+'<div class="search-bar"><input id="pSearch" value="'+escHtml(searchVals.inventory)+'" placeholder="🔍 搜索产品..." oninput="onSearchInput(\'inventory\',this.value)" oncompositionstart="onCompStart()" oncompositionend="onCompEnd(\'inventory\',this.value)"></div>'+(ps.length?ps.map(p=>{const sc=p.stock<=p.minStock?'tag-red':p.stock<=p.minStock*2?'tag-orange':'tag-green';return'<div class="list-item"><div class="item-avatar">'+p.name[0]+'</div><div class="item-info"><div class="item-title">'+p.name+'</div><div class="item-sub">'+(p.brand?p.brand+' · ':'')+(p.category||'')+' · ¥'+p.price+'</div></div><span class="tag '+sc+'">库存'+p.stock+'</span><div class="item-actions"><button class="btn btn-xs btn-outline" onclick="editProduct(\''+p.id+'\')">✏️</button><button class="btn btn-xs btn-danger" onclick="delProduct(\''+p.id+'\')">🗑</button></div></div>'}).join(''):'<div class="empty-state"><div class="empty-icon">📦</div><p>暂无产品</p></div>')+'</div>';
   restoreSearchFocus('pSearch',searchVals.inventory);
 }
 function editProduct(id){const p=data.products.find(x=>x.id===id);if(p)openProductForm(p);}
@@ -709,12 +744,12 @@ function renderScripts(div){
   const items=[...data.scripts].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.createdAt||'').localeCompare(a.createdAt||''));
   div.innerHTML='<div class="card"><div class="card-header"><h3>📝 脚本管理</h3><span class="count">'+data.scripts.length+'</span></div><p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px">💡 点击脚本标题进入分镜拍摄，点✏️编辑信息</p><button class="btn btn-primary btn-block" style="margin-bottom:12px" onclick="openScriptForm()">+ 新建脚本</button>'+(items.length?items.map(s=>{
     const sm=scriptStatusMeta(s.status);const tpl=SCRIPT_LIB.find(t=>t.name===s.type);
-    return'<div class="script-mgmt-item"><div class="script-mgmt-title" onclick="enterStoryboard(\''+s.id+'\')">'+(tpl?tpl.icon:'📝')+' '+escHtml(s.title)+'</div><div class="script-mgmt-meta"><span class="tag tag-blue">'+(s.type||'自定义')+'</span><span class="tag '+sm.c+'">'+sm.l+'</span><span>📅 '+(s.date||'未定')+'</span>'+(s.platform?'<span>🎯 '+s.platform+'</span>':'')+((s.storyboard||[]).length?'<span>🎬 '+(s.storyboard||[]).length+'个镜头</span>':'')+'</div><div class="script-mgmt-actions"><button class="btn btn-xs btn-outline" onclick="enterStoryboard(\''+s.id+'\')">🎬 分镜</button><button class="btn btn-xs btn-outline" onclick="editScript(\''+s.id+'\')">✏️ 编辑</button>'+(s.status==='done'?'<button class="btn btn-xs btn-primary" onclick="scriptPublish(\''+s.id+'\')">🚀 一键发布</button>':'')+'<button class="btn btn-xs btn-danger" onclick="delScript(\''+s.id+'\')">🗑</button></div></div>';
+    return'<div class="script-mgmt-item"><div class="script-mgmt-title" onclick="enterStoryboard(\''+s.id+'\')">'+(tpl?tpl.icon:'📝')+' '+escHtml(s.title)+'</div><div class="script-mgmt-meta"><span class="tag tag-blue">'+(s.type||'自定义')+'</span><span class="tag '+sm.c+'">'+sm.l+'</span><span>📅 '+(s.date||'未定')+'</span>'+(s.platform?'<span>🎯 '+s.platform+'</span>':'')+((s.storyboard||[]).length?'<span>🎬 '+(s.storyboard||[]).length+'个镜头</span>':'')+'</div><div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap"><span style="font-size:12px;color:var(--text-secondary)">改状态：</span><select class="status-inline" onchange="scriptSetStatus(\''+s.id+'\',this.value)">'+SCRIPT_STATUS.map(st=>'<option value="'+st.v+'" '+(st.v===(s.status||'editing')?'selected':'')+'>'+st.l+'</option>').join('')+'</select><button class="btn btn-xs btn-outline" onclick="enterStoryboard(\''+s.id+'\')">🎬 分镜</button><button class="btn btn-xs btn-outline" onclick="editScript(\''+s.id+'\')">✏️ 编辑</button><button class="btn btn-xs btn-danger" onclick="delScript(\''+s.id+'\')">🗑</button></div></div>';
   }).join(''):'<div class="empty-state"><div class="empty-icon">📝</div><p>还没有脚本，点击上方新建</p></div>')+'</div>';
 }
 function openScriptForm(s){
   editingId=s?s.id:null;
-  const topicOpts=data.topics.map(t=>'<option value="'+escHtml(t.title)+'">').join('');
+  const topicOpts=data.topics.map(t=>'<option value="'+escHtml(t.title)+'">'+escHtml(t.title)+'</option>').join('');
   const tplOpts=SCRIPT_LIB.map(t=>'<option value="'+t.name+'" '+(s&&s.type===t.name?'selected':'')+'>'+t.icon+' '+t.name+'</option>').join('');
   const pf=['抖音','小红书','快手','微博','视频号','全平台'];
   document.getElementById('modalContent').innerHTML='<h3>'+(s?'编辑':'新建')+'脚本</h3><div class="form-group"><label>标题*（可从选题库选择或手动输入）</label><input id="fScT" list="topicList" value="'+(s?escHtml(s.title):'')+'" placeholder="输入或选择选题"><datalist id="topicList">'+topicOpts+'</datalist></div><div class="form-row"><div class="form-group"><label>脚本类型</label><select id="fScType">'+tplOpts+'</select></div><div class="form-group"><label>平台</label><select id="fScP">'+pf.map(p=>'<option '+(s&&s.platform===p?'selected':'')+'>'+p+'</option>').join('')+'</select></div></div><div class="form-row"><div class="form-group"><label>日期</label><input type="date" id="fScD" value="'+(s?s.date||todayStr():todayStr())+'"></div><div class="form-group"><label>状态</label><select id="fScS">'+SCRIPT_STATUS.map(st=>'<option value="'+st.v+'" '+(s&&s.status===st.v?'selected':'')+'>'+st.l+'</option>').join('')+'</select></div></div><div class="form-group"><label>备注/大纲</label><textarea id="fScN" placeholder="脚本大纲、灵感...">'+(s?s.notes||'':'')+'</textarea></div><div class="modal-actions"><button class="btn btn-outline btn-block" onclick="closeModal()">取消</button><button class="btn btn-primary btn-block" onclick="saveScriptForm()">保存</button></div>';
@@ -731,8 +766,21 @@ function editScript(id){const s=data.scripts.find(x=>x.id===id);if(s)openScriptF
 function delScript(id){if(!confirm('确定删除此脚本？'))return;data.scripts=data.scripts.filter(x=>x.id!==id);save();refreshView('scripts');toast('已删除');}
 function scriptPublish(id){
   const s=data.scripts.find(x=>x.id===id);if(!s)return;
-  data.contents.push({id:gid(),title:s.title,platform:s.platform||'全平台',publishDate:todayStr(),status:'planned',notes:s.notes||'',createdAt:new Date().toISOString()});
+  if(!data.contents.find(c=>c.title===s.title&&c.notes===s.notes)){
+    data.contents.push({id:gid(),title:s.title,platform:s.platform||'全平台',publishDate:todayStr(),status:'planned',notes:s.notes||'',createdAt:new Date().toISOString()});
+  }
   s.status='published';save();toast('已转入发布管理');switchView('calendar');
+}
+function scriptSetStatus(id,v){
+  const s=data.scripts.find(x=>x.id===id);if(!s)return;
+  s.status=v;save();
+  if(v==='published'){
+    if(!data.contents.find(c=>c.title===s.title)){
+      data.contents.push({id:gid(),title:s.title,platform:s.platform||'全平台',publishDate:todayStr(),status:'planned',notes:s.notes||'',createdAt:new Date().toISOString()});
+      toast('状态已更新，已同步到发布管理');
+    } else { toast('状态已更新'); }
+  } else { toast('状态已更新'); }
+  refreshView('scripts');
 }
 function enterStoryboard(id){currentScriptId=id;refreshView('scripts');}
 function exitStoryboard(){currentScriptId=null;refreshView('scripts');}
@@ -740,26 +788,30 @@ function renderScriptStoryboard(div){
   const s=data.scripts.find(x=>x.id===currentScriptId);
   if(!s){currentScriptId=null;renderScripts(div);return;}
   const rows=s.storyboard&&s.storyboard.length?s.storyboard:[getEmptyShootRow()];
-  let tableHtml='<div class="shoot-table-wrap"><table class="shoot-table" id="shootTable"><thead><tr><th class="row-num">#</th>'+SHOOT_SCRIPT_COLS.map(c=>'<th style="width:'+c.width+'">'+c.label+'</th>').join('')+'<th width="40">操作</th></tr></thead><tbody id="shootTableBody">';
+  let cardsHtml='<div id="shootCardsBody">';
   rows.forEach((r,ri)=>{
-    tableHtml+='<tr><td class="row-num">'+(ri+1)+'</td>';
+    cardsHtml+='<div class="storyboard-card" id="sbCard_'+ri+'"><div class="storyboard-card-head"><span class="storyboard-card-num">🎬 镜头 '+(ri+1)+'</span><button class="btn btn-xs btn-danger" onclick="delShootRow('+ri+')">✕ 删除</button></div><div class="storyboard-fields">';
     SHOOT_SCRIPT_COLS.forEach(c=>{
       const val=r[c.key]||'';
-      if(c.key==='content'||c.key==='dialogue'){tableHtml+='<td><textarea data-col="'+c.key+'" data-row="'+ri+'" placeholder="'+c.placeholder+'">'+escHtml(val)+'</textarea></td>';}
-      else{tableHtml+='<td><input type="text" data-col="'+c.key+'" data-row="'+ri+'" placeholder="'+c.placeholder+'" value="'+escHtml(val)+'"></td>';}
+      const cls=(c.key==='content'||c.key==='dialogue')?'sb-field sb-field-full':'sb-field';
+      if(c.key==='content'||c.key==='dialogue'){
+        cardsHtml+='<div class="'+cls+'"><label>'+c.label+'</label><textarea data-col="'+c.key+'" data-row="'+ri+'" placeholder="'+c.placeholder+'">'+escHtml(val)+'</textarea></div>';
+      } else {
+        cardsHtml+='<div class="'+cls+'"><label>'+c.label+'</label><input type="text" data-col="'+c.key+'" data-row="'+ri+'" placeholder="'+c.placeholder+'" value="'+escHtml(val)+'"></div>';
+      }
     });
-    tableHtml+='<td><button class="btn btn-xs btn-danger" onclick="delShootRow('+ri+')">✕</button></td></tr>';
+    cardsHtml+='</div></div>';
   });
-  tableHtml+='</tbody></table></div><button class="shoot-add-row-btn" onclick="addShootRow()">＋ 添加一个镜头</button>';
-  div.innerHTML='<div class="card"><div class="card-header"><h3>🎬 '+escHtml(s.title)+' - 分镜拍摄</h3><button class="btn btn-xs btn-outline" onclick="exitStoryboard()">← 返回列表</button></div><div style="margin-bottom:10px"><div class="form-row"><div class="form-group"><label>封面画面描述</label><input id="ssCover" placeholder="封面画面构思" value="'+escHtml(s.cover||'')+'"></div><div class="form-group"><label>封面贴字</label><input id="ssCoverText" placeholder="封面文字" value="'+escHtml(s.coverText||'')+'"></div></div></div>'+tableHtml+'<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-primary" style="flex:1" onclick="saveStoryboard()">💾 保存分镜</button><button class="btn btn-outline" onclick="generateShootScript()">✨ 生成预览</button></div><div class="generated-script" id="generatedScript"></div></div>';
+  cardsHtml+='</div><button class="shoot-add-row-btn" onclick="addShootRow()">＋ 添加一个镜头</button>';
+  div.innerHTML='<div class="card"><div class="card-header"><h3>🎬 '+escHtml(s.title)+' - 分镜拍摄</h3><button class="btn btn-xs btn-outline" onclick="exitStoryboard()">← 返回列表</button></div><div style="margin-bottom:10px"><div class="form-row"><div class="form-group"><label>封面画面描述</label><input id="ssCover" placeholder="封面画面构思" value="'+escHtml(s.cover||'')+'"></div><div class="form-group"><label>封面贴字</label><input id="ssCoverText" placeholder="封面文字" value="'+escHtml(s.coverText||'')+'"></div></div></div>'+cardsHtml+'<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-primary" style="flex:1" onclick="saveStoryboard()">💾 保存分镜</button><button class="btn btn-outline" onclick="generateShootScript()">✨ 生成预览</button></div><div class="generated-script" id="generatedScript"></div></div>';
 }
 function getEmptyShootRow(){const r={};SHOOT_SCRIPT_COLS.forEach(c=>r[c.key]='');return r;}
-function addShootRow(){const s=data.scripts.find(x=>x.id===currentScriptId);if(!s)return;if(!s.storyboard)s.storyboard=[];s.storyboard.push(getEmptyShootRow());save();renderScriptStoryboard(document.getElementById('view-scripts'));toast('已添加一行');}
+function addShootRow(){const s=data.scripts.find(x=>x.id===currentScriptId);if(!s)return;if(!s.storyboard)s.storyboard=[];s.storyboard.push(getEmptyShootRow());save();renderScriptStoryboard(document.getElementById('view-scripts'));toast('已添加一个镜头');}
 function delShootRow(idx){const s=data.scripts.find(x=>x.id===currentScriptId);if(!s||!s.storyboard)return;if(s.storyboard.length<=1){toast('至少保留一行');return;}s.storyboard.splice(idx,1);save();renderScriptStoryboard(document.getElementById('view-scripts'));toast('已删除');}
 function collectShootData(){
   const s=data.scripts.find(x=>x.id===currentScriptId);if(!s)return{meta:{},rows:[]};
   const meta={cover:document.getElementById('ssCover')?.value?.trim()||'',coverText:document.getElementById('ssCoverText')?.value?.trim()||''};
-  const rows=[];document.querySelectorAll('#shootTableBody tr').forEach(tr=>{const row={};tr.querySelectorAll('input,textarea').forEach(el=>{row[el.dataset.col]=el.value.trim();});rows.push(row);});
+  const rows=[];document.querySelectorAll('#shootCardsBody .storyboard-card').forEach(card=>{const row={};card.querySelectorAll('input,textarea').forEach(el=>{row[el.dataset.col]=el.value.trim();});rows.push(row);});
   return{meta,rows};
 }
 function saveStoryboard(){
@@ -824,7 +876,7 @@ function renderCalendarContent(div){
   if(calFilterStatus!=='all')items=items.filter(c=>(c.status||'planned')===calFilterStatus);
   const platforms=['全部','抖音','小红书','快手','微博','视频号','全平台'];
   const statuses=[{v:'all',l:'全部'},{v:'planned',l:'计划中'},{v:'drafting',l:'创作中'},{v:'published',l:'已发布'}];
-  div.innerHTML='<div class="card"><div class="card-header"><h3>📅 发布管理</h3><span class="count">'+data.contents.length+'</span></div><div class="filter-row"><select onchange="setCalPlatform(this.value)">'+platforms.map(p=>'<option value="'+(p==='全部'?'all':p)+'" '+(calFilterPlatform===(p==='全部'?'all':p)?'selected':'')+'>'+p+'</option>').join('')+'</select><select onchange="setCalStatus(this.value)">'+statuses.map(s=>'<option value="'+s.v+'" '+(calFilterStatus===s.v?'selected':'')+'>'+s.l+'</option>').join('')+'</select></div>'+(items.length?items.map(c=>{const sm=contentStatusMeta(c.status);return'<div class="cc-card"><div class="cc-title">'+c.title+'</div><div class="cc-meta"><span>📅 '+(c.publishDate||'未定')+'</span><span>🎯 '+(c.platform||'全平台')+'</span><span class="tag '+sm.c+'">'+sm.l+'</span></div><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span style="font-size:12px;color:var(--text-secondary)">改状态：</span><select class="status-inline" onchange="setContentStatus(\''+c.id+'\',this.value)">'+CONTENT_STATUS.map(s=>'<option value="'+s.v+'" '+(s.v===(c.status||'planned')?'selected':'')+'>'+s.l+'</option>').join('')+'</select></div>'+(c.metrics?'<div style="display:flex;gap:14px;margin-top:6px;font-size:12px;color:var(--text-secondary)"><span>👁 '+(c.metrics.views||0)+'</span><span>❤️ '+(c.metrics.likes||0)+'</span><span>💬 '+(c.metrics.comments||0)+'</span><span>🔄 '+(c.metrics.shares||0)+'</span></div>':'')+'<div style="text-align:right;margin-top:6px"><button class="btn btn-xs btn-outline" onclick="editContent(\''+c.id+'\')">✏️</button><button class="btn btn-xs btn-danger" onclick="delContent(\''+c.id+'\')">🗑</button></div></div>'}).join(''):'<div class="empty-state"><div class="empty-icon">📅</div><p>'+(data.contents.length?'当前筛选无内容':'暂无排期，点 + 添加')+'</p></div>')+'</div>';
+  div.innerHTML='<div class="card"><div class="card-header"><h3>📅 发布管理</h3><span class="count">'+data.contents.length+'</span></div><div class="filter-row"><div class="filter-col"><span class="filter-label">平台</span><select onchange="setCalPlatform(this.value)">'+platforms.map(p=>'<option value="'+(p==='全部'?'all':p)+'" '+(calFilterPlatform===(p==='全部'?'all':p)?'selected':'')+'>'+p+'</option>').join('')+'</select></div><div class="filter-col"><span class="filter-label">状态</span><select onchange="setCalStatus(this.value)">'+statuses.map(s=>'<option value="'+s.v+'" '+(calFilterStatus===s.v?'selected':'')+'>'+s.l+'</option>').join('')+'</select></div></div>'+(items.length?items.map(c=>{const sm=contentStatusMeta(c.status);return'<div class="cc-card"><div class="cc-title">'+c.title+'</div><div class="cc-meta"><span>📅 '+(c.publishDate||'未定')+'</span><span>🎯 '+(c.platform||'全平台')+'</span><span class="tag '+sm.c+'">'+sm.l+'</span></div><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span style="font-size:12px;color:var(--text-secondary)">改状态：</span><select class="status-inline" onchange="setContentStatus(\''+c.id+'\',this.value)">'+CONTENT_STATUS.map(s=>'<option value="'+s.v+'" '+(s.v===(c.status||'planned')?'selected':'')+'>'+s.l+'</option>').join('')+'</select></div>'+(c.metrics?'<div style="display:flex;gap:14px;margin-top:6px;font-size:12px;color:var(--text-secondary)"><span>👁 '+(c.metrics.views||0)+'</span><span>❤️ '+(c.metrics.likes||0)+'</span><span>💬 '+(c.metrics.comments||0)+'</span><span>🔄 '+(c.metrics.shares||0)+'</span></div>':'')+'<div style="text-align:right;margin-top:6px"><button class="btn btn-xs btn-outline" onclick="editContent(\''+c.id+'\')">✏️</button><button class="btn btn-xs btn-danger" onclick="delContent(\''+c.id+'\')">🗑</button></div></div>'}).join(''):'<div class="empty-state"><div class="empty-icon">📅</div><p>'+(data.contents.length?'当前筛选无内容':'暂无排期，点 + 添加')+'</p></div>')+'</div>';
 }
 function setCalPlatform(p){calFilterPlatform=p;refreshView('calendar');}
 function setCalStatus(s){calFilterStatus=s;refreshView('calendar');}
@@ -866,7 +918,7 @@ function renderPhotos(div){
   const q=searchVals.photo.toLowerCase();
   let ps=[...data.photos].sort((a,b)=>(b.shootDate||'').localeCompare(a.shootDate||''));
   if(q)ps=ps.filter(p=>p.name.toLowerCase().includes(q)||(p.type||'').toLowerCase().includes(q));
-  div.innerHTML='<div class="card"><div class="card-header"><h3>📷 客片管理</h3><span class="count">'+data.photos.length+'</span></div><div class="search-bar"><input id="phSearch" value="'+escHtml(searchVals.photo)+'" placeholder="🔍 搜索客户/类型..." oninput="onSearchInput(\'photo\',this.value)"></div>'+(ps.length?ps.map(p=>{const st=photoStatus(p.status);return'<div class="list-item"><div class="photo-thumb">'+(p.img?'<img src="'+p.img+'" style="width:100%;height:100%;border-radius:10px;object-fit:cover">':'📷')+'</div><div class="item-info"><div class="item-title">'+p.name+'</div><div class="item-sub">'+(p.type||'')+' · '+(p.shootDate||'未定日期')+'</div></div><span class="tag '+st.c+'">'+st.l+'</span><div class="item-actions"><button class="btn btn-xs btn-outline" onclick="editClientPhoto(\''+p.id+'\')">✏️</button><button class="btn btn-xs btn-danger" onclick="delClientPhoto(\''+p.id+'\')">🗑</button></div></div>'}).join(''):'<div class="empty-state"><div class="empty-icon">📷</div><p>还没有客片</p></div>')+'</div>';
+  div.innerHTML='<div class="card"><div class="card-header"><h3>📷 客片管理</h3><span class="count">'+data.photos.length+'</span></div><div class="search-bar"><input id="phSearch" value="'+escHtml(searchVals.photo)+'" placeholder="🔍 搜索客户/类型..." oninput="onSearchInput(\'photo\',this.value)" oncompositionstart="onCompStart()" oncompositionend="onCompEnd(\'photo\',this.value)"></div>'+(ps.length?ps.map(p=>{const st=photoStatus(p.status);return'<div class="list-item"><div class="photo-thumb">'+(p.img?'<img src="'+p.img+'" style="width:100%;height:100%;border-radius:10px;object-fit:cover">':'📷')+'</div><div class="item-info"><div class="item-title">'+p.name+'</div><div class="item-sub">'+(p.type||'')+' · '+(p.shootDate||'未定日期')+'</div></div><span class="tag '+st.c+'">'+st.l+'</span><div class="item-actions"><button class="btn btn-xs btn-outline" onclick="editClientPhoto(\''+p.id+'\')">✏️</button><button class="btn btn-xs btn-danger" onclick="delClientPhoto(\''+p.id+'\')">🗑</button></div></div>'}).join(''):'<div class="empty-state"><div class="empty-icon">📷</div><p>还没有客片</p></div>')+'</div>';
   restoreSearchFocus('phSearch',searchVals.photo);
 }
 function editClientPhoto(id){const p=data.photos.find(x=>x.id===id);if(p)openClientPhotoForm(p);}
@@ -888,7 +940,7 @@ function renderShootPlans(div){
   let ps=[...data.shootPlans].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   if(q)ps=ps.filter(p=>(p.title||'').toLowerCase().includes(q)||(p.client||'').toLowerCase().includes(q));
   const sl={planned:'tag-blue',shot:'tag-orange',done:'tag-green'};const sll={planned:'待拍摄',shot:'已拍摄',done:'已完成'};
-  div.innerHTML='<div class="card"><div class="card-header"><h3>🎬 拍摄计划</h3><span class="count">'+data.shootPlans.length+'</span></div><div class="search-bar"><input id="spSearch" value="'+escHtml(searchVals.shootplan)+'" placeholder="🔍 搜索标题/客户..." oninput="onSearchInput(\'shootplan\',this.value)"></div>'+(ps.length?ps.map(p=>'<div class="list-item"><div class="item-avatar">🎬</div><div class="item-info"><div class="item-title">'+p.title+'</div><div class="item-sub">'+(p.client||'未定客户')+' · '+(p.date||'未定日期')+(p.location?' · '+p.location:'')+'</div></div><span class="tag '+(sl[p.status]||'tag-gray')+'">'+(sll[p.status]||'待拍摄')+'</span><div class="item-actions"><button class="btn btn-xs btn-outline" onclick="editShootPlan(\''+p.id+'\')">✏️</button><button class="btn btn-xs btn-danger" onclick="delShootPlan(\''+p.id+'\')">🗑</button></div></div>').join(''):'<div class="empty-state"><div class="empty-icon">🎬</div><p>还没有拍摄计划</p></div>')+'</div>';
+  div.innerHTML='<div class="card"><div class="card-header"><h3>🎬 拍摄计划</h3><span class="count">'+data.shootPlans.length+'</span></div><div class="search-bar"><input id="spSearch" value="'+escHtml(searchVals.shootplan)+'" placeholder="🔍 搜索标题/客户..." oninput="onSearchInput(\'shootplan\',this.value)" oncompositionstart="onCompStart()" oncompositionend="onCompEnd(\'shootplan\',this.value)"></div>'+(ps.length?ps.map(p=>'<div class="list-item"><div class="item-avatar">🎬</div><div class="item-info"><div class="item-title">'+p.title+'</div><div class="item-sub">'+(p.client||'未定客户')+' · '+(p.date||'未定日期')+(p.location?' · '+p.location:'')+'</div></div><span class="tag '+(sl[p.status]||'tag-gray')+'">'+(sll[p.status]||'待拍摄')+'</span><div class="item-actions"><button class="btn btn-xs btn-outline" onclick="editShootPlan(\''+p.id+'\')">✏️</button><button class="btn btn-xs btn-danger" onclick="delShootPlan(\''+p.id+'\')">🗑</button></div></div>').join(''):'<div class="empty-state"><div class="empty-icon">🎬</div><p>还没有拍摄计划</p></div>')+'</div>';
   restoreSearchFocus('spSearch',searchVals.shootplan);
 }
 function editShootPlan(id){const p=data.shootPlans.find(x=>x.id===id);if(p)openShootPlanForm(p);}
