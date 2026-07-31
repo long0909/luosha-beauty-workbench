@@ -1,0 +1,11 @@
+{
+  "name": "美妆工作室 · 全能工作台",
+  "short_name": "美妆工作台",
+  "description": "顾客管理 · 库存统计 · 收支记录 · AI妆助手 · 热点追踪 · 自媒体管理",
+  "start_url": "beauty-workbench.html",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#e8537a",
+  "orientation": "portrait",
+  "icons": []
+}
