@@ -1,4 +1,4 @@
-const CACHE = 'beauty-wb-v5';
+const CACHE = 'beauty-wb-v6';
 const ASSETS = ['beauty-workbench.html', 'manifest.json'];
 
 self.addEventListener('install', e => {

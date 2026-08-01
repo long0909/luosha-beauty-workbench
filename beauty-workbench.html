@@ -179,7 +179,7 @@ textarea { resize:vertical; min-height:60px; }
 .script-mgmt-title:active { color:var(--primary); }
 .script-mgmt-meta { font-size:12px; color:var(--text-secondary); display:flex; gap:8px; flex-wrap:wrap; margin-top:5px; }
 .script-mgmt-actions { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
-.shoot-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:10px; border-radius:var(--radius-sm); border:1.5px solid var(--border); }
+.shoot-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:10px; border-radius:var(--radius-sm); border:1.5px solid var(--border); display:none; } /* hidden on mobile, shown on desktop */
 .shoot-table { width:100%; min-width:900px; border-collapse:collapse; font-size:12px; }
 .shoot-table th { background:var(--primary); color:#fff; padding:8px 6px; text-align:center; font-weight:600; white-space:nowrap; position:sticky; top:0; }
 .shoot-table td { padding:6px 4px; border:1px solid var(--border); vertical-align:middle; }
@@ -210,15 +210,74 @@ textarea { resize:vertical; min-height:60px; }
 .filter-row { display:flex; gap:8px; margin-bottom:12px; }
 .filter-row .filter-col { flex:1; }
 .filter-row select { width:100%; }
-@media(min-width:768px){
-  body { max-width:900px; }
-  .fab { right:calc(50% - 430px); }
-  .storyboard-fields { grid-template-columns:1fr 1fr 1fr; }
-  .sb-field-full { grid-column:1/-1; }
-  .modal { max-width:700px; margin:0 auto; border-radius:20px; }
+@media(min-width:1024px){
+  /* Full-screen desktop layout */
+  body { max-width:none; margin:0; display:flex; min-height:100vh; }
+  /* Hide mobile header on desktop */
+  .header { display:none; }
+  /* Sidebar becomes permanent left panel */
+  .drawer-overlay { display:none !important; }
+  .drawer {
+    position:static; transform:none; width:260px; max-width:260px; flex-shrink:0;
+    box-shadow:none; border-right:1px solid var(--border); overflow-y:auto;
+    display:block !important; padding-bottom:20px;
+  }
+  .drawer-header { border-radius:0; padding:20px 18px 18px; }
+  .nav-item { border-radius:0 8px 8px 0; margin-right:10px; padding:12px 18px 12px 24px; }
+  .nav-item:hover { background:var(--primary-light); }
+  .nav-home { border-radius:0 8px 8px 0; margin-right:10px; padding:14px 18px 14px 24px; }
+  /* Content area fills the screen */
+  .content-wrapper { flex:1; overflow-y:auto; max-height:100vh; padding:16px 24px; }
+  .content { max-width:1100px; margin:0 auto; padding:0; }
+  .card { padding:18px 22px; }
+  /* Modal centered */
+  .modal-overlay { align-items:center; }
+  .modal { max-width:640px; border-radius:20px; max-height:90vh; }
+  /* FAB reposition */
+  .fab { right:40px; bottom:30px; }
+  /* Wider grids */
   .summary-row { grid-template-columns:1fr 1fr 1fr 1fr; }
   .quick-grid { grid-template-columns:1fr 1fr 1fr 1fr 1fr; }
-  .material-grid { grid-template-columns:1fr 1fr 1fr; }
+  .material-grid { grid-template-columns:1fr 1fr 1fr 1fr; }
+  .pub-board { grid-template-columns:1fr 1fr 1fr 1fr; }
+  .retouch-board { grid-template-columns:1fr 1fr 1fr 1fr 1fr; }
+  /* Calendar wider */
+  .calendar-grid { gap:4px; }
+  .day-cell { padding:12px 4px; }
+  /* Form rows take advantage of width */
+  .form-row { gap:16px; }
+  .form-row .form-group { flex:1 1 200px; }
+  /* Shoot table on desktop */
+  .shoot-table-wrap { overflow-x:visible; }
+  .shoot-table { min-width:100%; font-size:13px; }
+  .shoot-table th { padding:10px 8px; font-size:13px; }
+  .shoot-table td { padding:8px 6px; }
+  .shoot-table input,.shoot-table textarea,.shoot-table select { padding:8px 10px; font-size:13px; }
+  /* Storyboard cards not needed on desktop */
+  .storyboard-card { display:none; }
+  /* Responsive storyboard-fields still for mobile */
+  /* Larger text on desktop */
+  .card-header h3 { font-size:18px; }
+  .item-title { font-size:16px; }
+  /* Export button styling */
+  .export-xlsx-btn {
+    background:linear-gradient(135deg,#217346,#2e7d32); color:#fff;
+    padding:8px 16px; border-radius:8px; border:none; font-size:13px; font-weight:600;
+    cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+  }
+  .export-xlsx-btn:hover { opacity:0.9; }
+  /* Expand all nav groups on desktop */
+  .nav-group.collapsed .nav-sub { display:block !important; }
+  .nav-group.collapsed .chev { transform:none !important; }
+}
+
+/* Responsive storyboard: table on desktop, cards on mobile */
+@media(max-width:1023px){
+  .shoot-table-wrap { display:none; }
+}
+@media(min-width:1024px){
+  .shoot-cards-mobile { display:none; }
+  .shoot-table-wrap { display:block; }
 }
 .material-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .material-card { background:var(--bg); border-radius:var(--radius-sm); overflow:hidden; position:relative; }
@@ -324,7 +383,7 @@ textarea { resize:vertical; min-height:60px; }
   </div>
   <div class="nav-item" data-view="settings" style="margin-top:8px;border-top:1px solid var(--border);padding-top:14px;"><span class="ni-icon">⚙️</span> 设置与备份</div>
 </div>
-<div class="content" id="view-home"></div>
+<div class="content-wrapper"><div class="content" id="view-home"></div>
 <div class="content" id="view-schedule"></div>
 <div class="content" id="view-customers"></div>
 <div class="content" id="view-inventory"></div>
@@ -340,6 +399,7 @@ textarea { resize:vertical; min-height:60px; }
 <div class="content" id="view-shootplan"></div>
 <div class="content" id="view-retouch"></div>
 <div class="content" id="view-settings"></div>
+</div>
 <button class="fab" onclick="openQuickAdd()" id="fabBtn">+</button>
 <div class="modal-overlay" id="modalOverlay" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal" id="modalContent"></div>
@@ -575,18 +635,20 @@ function renderDayAppt(){
   c.innerHTML=h;
 }
 function openApptForm(a){editingId=a?a.id:null;
-  const custOpts=data.customers.map(c=>'<option value="'+escHtml(c.name)+'">').join('');
+  const custOpts=data.customers.map(c=>'<option value="'+escHtml(c.name)+'">'+escHtml(c.name)+'</option>').join('');
+  const SERVICES=['新娘妆','日常妆','精致妆','网感妆','1v1课程'];
   const sl=['confirmed','completed','cancelled'];const sll={confirmed:'已确认',completed:'已完成',cancelled:'已取消'};
   const curName=a?(a.customerName||data.customers.find(x=>x.id===a.customerId)?.name||''):'';
-  document.getElementById('modalContent').innerHTML='<h3>'+(a?'编辑':'添加')+'档期</h3><div class="form-group"><label>客户姓名<span class="req-star">*</span>（可输入匹配已有客户）</label><input id="fAcn" list="apptCustList" value="'+escHtml(curName)+'" placeholder="输入或选择客户"><datalist id="apptCustList">'+custOpts+'</datalist></div><div class="form-row"><div class="form-group"><label>日期<span class="req-star">*</span></label><input type="date" id="fAd" value="'+(a?a.date:selectedDate)+'"></div><div class="form-group"><label>时间<span class="req-star">*</span></label><input type="time" id="fAt" value="'+(a?a.time:'10:00')+'"></div></div><div class="form-group"><label>服务项目<span class="req-star">*</span></label><input id="fAs" value="'+escHtml(a?a.service:'')+'" placeholder="如：日常妆、新娘跟妆"></div><div class="form-group"><label>状态</label><select id="fAst">'+sl.map(s=>'<option value="'+s+'" '+(a&&a.status===s?'selected':'')+'>'+sll[s]+'</option>').join('')+'</select></div><div class="form-group"><label>备注</label><textarea id="fAn">'+escHtml(a?a.notes||'':'')+'</textarea></div><div class="modal-actions"><button class="btn btn-outline btn-block" onclick="closeModal()">取消</button><button class="btn btn-primary btn-block" onclick="saveAppt()">保存</button></div>';
+  const curService=a?a.service||'':'';
+  document.getElementById('modalContent').innerHTML='<h3>'+(a?'编辑':'添加')+'档期</h3><div class="form-group"><label>客户姓名<span class="req-star">*</span>（可输入匹配已有客户）</label><input id="fAcn" list="apptCustList" value="'+escHtml(curName)+'" placeholder="输入或选择客户" autocomplete="off"><datalist id="apptCustList">'+custOpts+'</datalist></div><div class="form-row"><div class="form-group"><label>日期<span class="req-star">*</span></label><input type="date" id="fAd" value="'+(a?a.date:selectedDate)+'"></div><div class="form-group"><label>时间<span class="req-star">*</span></label><input type="time" id="fAt" value="'+(a?a.time:'10:00')+'"></div></div><div class="form-group"><label>服务项目<span class="req-star">*</span></label><select id="fAs"><option value="">--请选择服务--</option>'+SERVICES.map(sv=>'<option value="'+sv+'" '+(curService===sv?'selected':'')+'>'+sv+'</option>').join('')+'</select></div><div class="form-group"><label>状态</label><select id="fAst">'+sl.map(s=>'<option value="'+s+'" '+(a&&a.status===s?'selected':'')+'>'+sll[s]+'</option>').join('')+'</select></div><div class="form-group"><label>备注</label><textarea id="fAn">'+escHtml(a?a.notes||'':'')+'</textarea></div><div class="modal-actions"><button class="btn btn-outline btn-block" onclick="closeModal()">取消</button><button class="btn btn-primary btn-block" onclick="saveAppt()">保存</button></div>';
   document.getElementById('modalOverlay').style.display='flex';}
 function saveAppt(){const cname=document.getElementById('fAcn').value.trim();
   if(!cname){toast('请输入客户姓名');return;}
   const matched=data.customers.find(c=>c.name===cname);
-  const ap={id:editingId||gid(),customerId:matched?matched.id:'',customerName:cname,date:document.getElementById('fAd').value,time:document.getElementById('fAt').value,service:document.getElementById('fAs').value.trim(),status:document.getElementById('fAst').value,notes:document.getElementById('fAn').value.trim()};
+  const ap={id:editingId||gid(),customerId:matched?matched.id:'',customerName:cname,date:document.getElementById('fAd').value,time:document.getElementById('fAt').value,service:document.getElementById('fAs').value,status:document.getElementById('fAst').value,notes:document.getElementById('fAn').value.trim()};
   if(!ap.date){toast('请选择日期');return;}
   if(!ap.time){toast('请选择时间');return;}
-  if(!ap.service){toast('请输入服务项目');return;}if(editingId){const ix=data.appointments.findIndex(x=>x.id===editingId);if(ix>=0)data.appointments[ix]=ap;}else data.appointments.push(ap);
+  if(!ap.service){toast('请选择服务项目');return;}if(editingId){const ix=data.appointments.findIndex(x=>x.id===editingId);if(ix>=0)data.appointments[ix]=ap;}else data.appointments.push(ap);
   save();closeModal();refreshView('schedule');toast(editingId?'已更新':'已添加');editingId=null;}
 function editAppt(id){const a=data.appointments.find(x=>x.id===id);if(a)openApptForm(a);}
 function delAppt(id){if(!confirm('确定删除？'))return;data.appointments=data.appointments.filter(x=>x.id!==id);save();refreshView('schedule');toast('已删除');}
@@ -826,7 +888,9 @@ function renderScriptStoryboard(div){
   const s=data.scripts.find(x=>x.id===currentScriptId);
   if(!s){currentScriptId=null;renderScripts(div);return;}
   const rows=s.storyboard&&s.storyboard.length?s.storyboard:[getEmptyShootRow()];
-  let cardsHtml='<div id="shootCardsBody">';
+
+  // Build mobile card layout
+  let cardsHtml='<div class="shoot-cards-mobile" id="shootCardsBody">';
   rows.forEach((r,ri)=>{
     cardsHtml+='<div class="storyboard-card" id="sbCard_'+ri+'"><div class="storyboard-card-head"><span class="storyboard-card-num">🎬 镜头 '+(ri+1)+'</span><button class="btn btn-xs btn-danger" onclick="delShootRow('+ri+')">✕ 删除</button></div><div class="storyboard-fields">';
     SHOOT_SCRIPT_COLS.forEach(c=>{
@@ -840,8 +904,22 @@ function renderScriptStoryboard(div){
     });
     cardsHtml+='</div></div>';
   });
-  cardsHtml+='</div><button class="shoot-add-row-btn" onclick="addShootRow()">＋ 添加一个镜头</button>';
-  div.innerHTML='<div class="card"><div class="card-header"><h3>🎬 '+escHtml(s.title)+' - 分镜拍摄</h3><button class="btn btn-xs btn-outline" onclick="exitStoryboard()">← 返回列表</button></div><div style="margin-bottom:10px"><div class="form-row"><div class="form-group"><label>封面画面描述</label><input id="ssCover" placeholder="封面画面构思" value="'+escHtml(s.cover||'')+'"></div><div class="form-group"><label>封面贴字</label><input id="ssCoverText" placeholder="封面文字" value="'+escHtml(s.coverText||'')+'"></div></div></div>'+cardsHtml+'<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-primary" style="flex:1" onclick="saveStoryboard()">💾 保存分镜</button><button class="btn btn-outline" onclick="generateShootScript()">✨ 生成预览</button></div><div class="generated-script" id="generatedScript"></div></div>';
+  cardsHtml+='</div>';
+
+  // Build desktop table layout
+  let tableHtml='<div class="shoot-table-wrap"><table class="shoot-table" id="shootTable"><thead><tr><th class="row-num">#</th>'+SHOOT_SCRIPT_COLS.map(c=>'<th style="width:'+c.width+'">'+c.label+'</th>').join('')+'<th width="40">操作</th></tr></thead><tbody id="shootTableBody">';
+  rows.forEach((r,ri)=>{
+    tableHtml+='<tr><td class="row-num">'+(ri+1)+'</td>';
+    SHOOT_SCRIPT_COLS.forEach(c=>{
+      const val=r[c.key]||'';
+      if(c.key==='content'||c.key==='dialogue'){tableHtml+='<td><textarea data-col="'+c.key+'" data-row="'+ri+'" placeholder="'+c.placeholder+'">'+escHtml(val)+'</textarea></td>';}
+      else{tableHtml+='<td><input type="text" data-col="'+c.key+'" data-row="'+ri+'" placeholder="'+c.placeholder+'" value="'+escHtml(val)+'"></td>';}
+    });
+    tableHtml+='<td><button class="btn btn-xs btn-danger" onclick="delShootRow('+ri+')">✕</button></td></tr>';
+  });
+  tableHtml+='</tbody></table></div>';
+
+  div.innerHTML='<div class="card"><div class="card-header"><h3>🎬 '+escHtml(s.title)+' - 分镜拍摄</h3><button class="btn btn-xs btn-outline" onclick="exitStoryboard()">← 返回列表</button></div><div style="margin-bottom:10px"><div class="form-row"><div class="form-group"><label>封面画面描述</label><input id="ssCover" placeholder="封面画面构思" value="'+escHtml(s.cover||'')+'"></div><div class="form-group"><label>封面贴字</label><input id="ssCoverText" placeholder="封面文字" value="'+escHtml(s.coverText||'')+'"></div></div></div>'+tableHtml+cardsHtml+'<button class="shoot-add-row-btn" onclick="addShootRow()">＋ 添加一个镜头</button><div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-primary" style="flex:1" onclick="saveStoryboard()">💾 保存分镜</button><button class="btn btn-outline" onclick="generateShootScript()">✨ 生成预览</button><button class="btn btn-outline export-xlsx-btn" onclick="exportShootXlsx()">📥 导出 Excel</button></div><div class="generated-script" id="generatedScript"></div></div>';
 }
 function getEmptyShootRow(){const r={};SHOOT_SCRIPT_COLS.forEach(c=>r[c.key]='');return r;}
 function addShootRow(){const s=data.scripts.find(x=>x.id===currentScriptId);if(!s)return;if(!s.storyboard)s.storyboard=[];s.storyboard.push(getEmptyShootRow());save();renderScriptStoryboard(document.getElementById('view-scripts'));toast('已添加一个镜头');}
@@ -849,13 +927,42 @@ function delShootRow(idx){const s=data.scripts.find(x=>x.id===currentScriptId);i
 function collectShootData(){
   const s=data.scripts.find(x=>x.id===currentScriptId);if(!s)return{meta:{},rows:[]};
   const meta={cover:document.getElementById('ssCover')?.value?.trim()||'',coverText:document.getElementById('ssCoverText')?.value?.trim()||''};
-  const rows=[];document.querySelectorAll('#shootCardsBody .storyboard-card').forEach(card=>{const row={};card.querySelectorAll('input,textarea').forEach(el=>{row[el.dataset.col]=el.value.trim();});rows.push(row);});
+  const rows=[];
+  // Try desktop table first, then mobile cards
+  const tableBody=document.getElementById('shootTableBody');
+  if(tableBody){tableBody.querySelectorAll('tr').forEach(tr=>{const row={};tr.querySelectorAll('input,textarea').forEach(el=>{row[el.dataset.col]=el.value.trim();});rows.push(row);});}
+  else{document.querySelectorAll('#shootCardsBody .storyboard-card').forEach(card=>{const row={};card.querySelectorAll('input,textarea').forEach(el=>{row[el.dataset.col]=el.value.trim();});rows.push(row);});}
   return{meta,rows};
 }
 function saveStoryboard(){
   const s=data.scripts.find(x=>x.id===currentScriptId);if(!s)return;
   const{meta,rows}=collectShootData();s.storyboard=rows;s.cover=meta.cover;s.coverText=meta.coverText;save();toast('分镜已保存 💾');
 }
+// ============ XLSX EXPORT ============
+function exportShootXlsx(){
+  const s=data.scripts.find(x=>x.id===currentScriptId);if(!s)return;
+  const{meta,rows}=collectShootData();
+  // Build Excel-compatible HTML table
+  let xls='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>分镜脚本</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>td{border:1px solid #ccc;padding:6px 10px;}th{background:#e8537a;color:#fff;padding:8px 10px;border:1px solid #ccc;}</style></head><body>';
+  xls+='<h2>'+escHtml(s.title)+' - 分镜脚本</h2>';
+  if(meta.cover)xls+='<p><b>封面画面描述：</b>'+escHtml(meta.cover)+'</p>';
+  if(meta.coverText)xls+='<p><b>封面贴字：</b>'+escHtml(meta.coverText)+'</p>';
+  xls+='<table><tr><th>#</th>'+SHOOT_SCRIPT_COLS.map(c=>'<th>'+c.label+'</th>').join('')+'</tr>';
+  rows.forEach((r,ri)=>{
+    if(!r.content&&!r.dialogue&&!r.scene)return;
+    xls+='<tr><td>'+(ri+1)+'</td>';
+    SHOOT_SCRIPT_COLS.forEach(c=>{xls+='<td>'+escHtml(r[c.key]||'')+'</td>';});
+    xls+='</tr>';
+  });
+  xls+='</table></body></html>';
+  const blob=new Blob([xls],{type:'application/vnd.ms-excel;charset=utf-8'});
+  const filename=(s.title||'分镜脚本').replace(/[\\/:*?"<>|]/g,'_')+'-分镜表.xls';
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.style.display='none';
+  document.body.appendChild(a);
+  setTimeout(()=>{a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(url),100);toast('Excel 已下载 📥');},100);
+}
+
 function generateShootScript(){
   const s=data.scripts.find(x=>x.id===currentScriptId);if(!s)return;
   const{meta,rows}=collectShootData();
