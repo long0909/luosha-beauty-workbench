@@ -41,7 +41,7 @@ body {
 .header-titles { flex:1; min-width:0; }
 .header h1 { font-size:17px; font-weight:700; }
 .header .subtitle { font-size:11px; opacity:0.85; margin-top:2px; }
-body { padding-top:env(safe-area-inset-top); padding-bottom:calc(20px + env(safe-area-inset-bottom)); }
+body { padding-top:0; padding-bottom:calc(20px + env(safe-area-inset-bottom)); }
 .header { padding-top:calc(14px + env(safe-area-inset-top)); }
 .home-cover { padding-top:calc(36px + env(safe-area-inset-top)); }
 .seg { display:flex; gap:4px; background:#f2f2f2; padding:4px; border-radius:10px; }
@@ -445,6 +445,7 @@ let calFilterPlatform='all';
 let calFilterStatus='all';
 let searchVals={customers:'',inventory:'',photo:'',shootplan:''};
 let currentScriptId=null;
+let _importPending=null;
 function todayStr(){const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
 function monthStartStr(){const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-01';}
 function getTx(id){return data.transactions.find(t=>t.id===id);}
@@ -1061,59 +1062,83 @@ function exportData(){
   const json=JSON.stringify(exportObj,null,2);
   const blob=new Blob([json],{type:'application/json'});
   const filename='beauty-backup-'+todayStr()+'.json';
-  const file=new File([blob],filename,{type:'application/json'});
   localStorage.setItem('beauty_wb_lastbackup',Date.now().toString());
-  if(navigator.canShare&&navigator.canShare({files:[file]})){
-    navigator.share({files:[file],title:'美妆工作台数据备份'}).then(()=>{
+  // Try native share first (mobile)
+  if(navigator.canShare&&navigator.canShare({files:[new File([blob],filename,{type:'application/json'})]})){
+    navigator.share({files:[new File([blob],filename,{type:'application/json'})],title:'美妆工作台数据备份'}).then(()=>{
       toast('备份已分享，请保存到安全位置');
       refreshView('settings');
-    }).catch(()=>{
-      // User cancelled share, try download fallback
-      downloadBackup(blob,filename);
-    });
+    }).catch(()=>downloadOnDesktop(blob,filename,json));
   }else{
-    downloadBackup(blob,filename);
+    downloadOnDesktop(blob,filename,json);
   }
+}
+function downloadOnDesktop(blob,filename,json){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;a.style.display='none';
+  document.body.appendChild(a);
+  // Use setTimeout to ensure the link is in the DOM before clicking
+  setTimeout(()=>{
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),100);
+    toast('备份文件已下载（如未弹出，请检查浏览器下载设置）');
+    refreshView('settings');
+  },100);
 }
 function downloadBackup(blob,filename){
-  try{
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;a.download=filename;
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast('备份已下载');
-    refreshView('settings');
-  }catch(e){
-    // Last resort: open in new tab
-    const url=URL.createObjectURL(blob);
-    window.open(url);
-    toast('备份已在新窗口打开，请保存');
-  }
+  // Legacy kept for reference; now unused but kept for safety
+  downloadOnDesktop(blob,filename,null);
 }
 function importData(input){
-  const file=input.files[0];if(!file)return;
+  const file=input.files[0];if(!file){return;}
   const reader=new FileReader();
   reader.onload=function(e){
     try{
-      const imported=JSON.parse(e.target.result);
+      const text=e.target.result;
+      const imported=JSON.parse(text);
       if(imported.data){
-        if(confirm('导入将覆盖当前所有数据！\n\n备份文件导出时间：'+(imported.exportDate||'未知')+'\n\n确定要继续吗？')){
-          data=imported.data;
-          const base={appointments:[],customers:[],products:[],transactions:[],trends:[...DEFAULT_TRENDS],topics:[],scripts:[],materials:[],contents:[],photos:[],shootPlans:[],followers:{douyin:0,xiaohongshu:0}};
-          Object.keys(base).forEach(k=>{if(data[k]===undefined)data[k]=base[k];});
-          if(!data.followers||typeof data.followers!=='object')data.followers={douyin:0,xiaohongshu:0};
-          data.followers={douyin:data.followers.douyin||0,xiaohongshu:data.followers.xiaohongshu||0};
-          save();closeModal();
-          localStorage.setItem('beauty_wb_lastbackup',Date.now().toString());
-          refreshView(currentView);
-          toast('✅ 数据导入成功');
-        }
-      }else{toast('❌ 文件格式错误，请选择正确的备份文件');}
-    }catch(err){toast('❌ 导入失败：文件格式错误');}
+        // Show confirm in modal instead of browser confirm
+        importConfirm(imported,file.name);
+      }else{toast('❌ 文件格式错误：缺少data字段，请选择正确的备份文件');}
+    }catch(err){toast('❌ 文件解析失败，请选择正确的 .json 备份文件');console.error('Import error:',err);}
+    input.value='';
   };
+  reader.onerror=function(){toast('❌ 文件读取失败，请重试');input.value='';};
   reader.readAsText(file);
-  input.value='';
+}
+function importConfirm(imported,filename){
+  _importPending=imported.data;
+  const expDate=imported.exportDate?new Date(imported.exportDate).toLocaleString('zh-CN'):'未知';
+  const stats=Object.keys(imported.data).filter(k=>Array.isArray(imported.data[k])).map(k=>imported.data[k].length+'条 '+k).join('、')||'无数据';
+  document.getElementById('modalContent').innerHTML=
+    '<h3>⚠️ 确认导入</h3>'+
+    '<div style="background:#fff3cd;padding:12px;border-radius:8px;margin:12px 0;font-size:13px;line-height:1.6;">'+
+    '<b>将要覆盖当前所有数据！</b><br>'+
+    '文件：'+escHtml(filename)+'<br>'+
+    '导出时间：'+expDate+'<br>'+
+    '包含数据：'+stats+
+    '</div>'+
+    '<div style="display:flex;gap:8px">'+
+    '<button class="btn btn-outline btn-block" onclick="closeModal()">取消</button>'+
+    '<button class="btn btn-primary btn-block" onclick="doImport()" id="doImportBtn">确认导入</button>'+
+    '</div>';
+  document.getElementById('modalOverlay').style.display='flex';
+}
+function doImport(){
+  if(!_importPending){toast('❌ 导入数据丢失，请重新选择文件');closeModal();return;}
+  const importedData=_importPending;
+  _importPending=null;
+  data=importedData;
+  const base={appointments:[],customers:[],products:[],transactions:[],trends:[...DEFAULT_TRENDS],topics:[],scripts:[],materials:[],contents:[],photos:[],shootPlans:[],followers:{douyin:0,xiaohongshu:0}};
+  Object.keys(base).forEach(k=>{if(data[k]===undefined)data[k]=base[k];});
+  if(!data.followers||typeof data.followers!=='object')data.followers={douyin:0,xiaohongshu:0};
+  data.followers={douyin:data.followers.douyin||0,xiaohongshu:data.followers.xiaohongshu||0};
+  save();closeModal();
+  localStorage.setItem('beauty_wb_lastbackup',Date.now().toString());
+  refreshView(currentView);
+  toast('✅ 数据导入成功！共恢复 '+Object.keys(data).filter(k=>Array.isArray(data[k])).reduce((s,k)=>s+data[k].length,0)+' 条记录');
 }
 
 // ============ INIT ============
