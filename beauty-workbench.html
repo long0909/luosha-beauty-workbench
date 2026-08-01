@@ -252,6 +252,25 @@ textarea { resize:vertical; min-height:60px; }
 .status-pill { font-size:11px; padding:4px 10px; border-radius:12px; font-weight:600; cursor:pointer; border:none; }
 .toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 24px; border-radius:20px; font-size:14px; z-index:999; animation:fadeInOut 2s ease forwards; pointer-events:none; }
 @keyframes fadeInOut { 0%{opacity:0;top:40px;} 15%{opacity:1;top:20px;} 85%{opacity:1;top:20px;} 100%{opacity:0;top:0;} }
+.backup-banner { background:linear-gradient(135deg,#fff3cd,#ffe4b5); border-radius:12px; padding:12px 16px; margin-bottom:12px; display:flex; align-items:center; gap:10px; cursor:pointer; }
+.backup-banner-icon { font-size:24px; }
+.backup-banner-text { flex:1; font-size:12px; color:#856404; line-height:1.4; }
+.backup-banner-text b { color:#d9480f; }
+.backup-warn { background:#fff3cd; color:#856404; padding:12px; border-radius:8px; font-size:12px; margin-bottom:12px; line-height:1.5; }
+.backup-btn { display:block; width:100%; padding:14px; border-radius:12px; font-size:15px; font-weight:600; text-align:center; margin-bottom:10px; border:none; cursor:pointer; transition:all 0.2s; }
+.backup-btn:active { transform:scale(0.97); }
+.backup-export { background:var(--primary); color:#fff; }
+.backup-import { background:#fff; color:var(--primary); border:2px solid var(--primary); }
+.backup-time { font-size:12px; color:var(--text-secondary); text-align:center; margin-top:8px; padding:8px; background:var(--bg); border-radius:8px; }
+.backup-stat { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.backup-stat:last-child { border-bottom:none; }
+.backup-stat .v { font-weight:700; color:var(--primary); }
+.sync-card { background:linear-gradient(135deg,#e8f5e9,#c8e6c9); border-radius:12px; padding:16px; margin-bottom:12px; }
+.sync-card h4 { font-size:14px; margin-bottom:8px; color:#2e7d32; }
+.sync-card p { font-size:12px; color:#558b2f; line-height:1.6; margin-bottom:8px; }
+.sync-key-input { width:100%; padding:10px; border:1px solid #a5d6a7; border-radius:8px; font-size:13px; font-family:monospace; margin-bottom:8px; }
+.sync-btn { background:#2e7d32; color:#fff; border:none; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; width:100%; }
+.sync-btn:disabled { opacity:0.5; }
 </style>
 </head>
 <body>
@@ -303,6 +322,7 @@ textarea { resize:vertical; min-height:60px; }
       <div class="nav-item" data-view="retouch"><span class="ni-icon">🖌️</span> 修图进度</div>
     </div>
   </div>
+  <div class="nav-item" data-view="settings" style="margin-top:8px;border-top:1px solid var(--border);padding-top:14px;"><span class="ni-icon">⚙️</span> 设置与备份</div>
 </div>
 <div class="content" id="view-home"></div>
 <div class="content" id="view-schedule"></div>
@@ -319,6 +339,7 @@ textarea { resize:vertical; min-height:60px; }
 <div class="content" id="view-photo"></div>
 <div class="content" id="view-shootplan"></div>
 <div class="content" id="view-retouch"></div>
+<div class="content" id="view-settings"></div>
 <button class="fab" onclick="openQuickAdd()" id="fabBtn">+</button>
 <div class="modal-overlay" id="modalOverlay" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal" id="modalContent"></div>
@@ -367,7 +388,11 @@ function loadData(){
   const raw=localStorage.getItem(STORAGE_KEY);
   const base={appointments:[],customers:[],products:[],transactions:[],trends:[...DEFAULT_TRENDS],topics:[],scripts:[],materials:[],contents:[],photos:[],shootPlans:[],followers:{douyin:0,xiaohongshu:0}};
   let d;
-  if(!raw){d=base;}
+  if(!raw){
+    // Try backup if main data is empty
+    const bk=localStorage.getItem('beauty_wb_backup');
+    if(bk){try{const bp=JSON.parse(bk);if(bp&&bp.data){d=bp.data;Object.keys(base).forEach(k=>{if(d[k]===undefined)d[k]=Array.isArray(base[k])?[]:{...base[k]};});if(!d.followers||typeof d.followers!=='object')d.followers={douyin:0,xiaohongshu:0};d.followers={douyin:d.followers.douyin||0,xiaohongshu:d.followers.xiaohongshu||0};console.log('[backup] Restored from backup');}else{d=base;}}catch(e){d=base;}}else{d=base;}
+  }
   else{
     try{
       d=JSON.parse(raw);
@@ -435,10 +460,10 @@ const VIEW_META={
   schedule:['📅 顾客档期','美妆工作室'],customers:['👥 客户资料','美妆工作室'],inventory:['📦 产品库存','美妆工作室'],finance:['💰 收支记录','美妆工作室'],ai:['🤖 话术模板','美妆工作室'],
   trends:['🔥 抖音美妆热点','热点追踪'],
   topics:['💡 选题库','自媒体运营'],scripts:['📝 脚本管理','自媒体运营'],materials:['🖼️ 素材库','自媒体运营'],calendar:['📅 发布管理','自媒体运营'],analytics:['📊 发布追踪','自媒体运营'],
-  photo:['📷 客片管理','摄影'],shootplan:['🎬 拍摄计划','摄影'],retouch:['🖌️ 修图进度','摄影']
+  photo:['📷 客片管理','摄影'],shootplan:['🎬 拍摄计划','摄影'],retouch:['🖌️ 修图进度','摄影'],settings:['⚙️ 设置与备份','数据管理']
 };
 function gid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,6);}
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data));try{localStorage.setItem('beauty_wb_backup',JSON.stringify({data:data,ts:Date.now(),v:STORAGE_KEY}));}catch(e){}}
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.getElementById('toastContainer').appendChild(t);setTimeout(()=>t.remove(),2000);}
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 let isComposing=false;
@@ -460,7 +485,7 @@ function switchView(v){
   const meta=VIEW_META[v]||['',''];
   document.getElementById('headerTitle').textContent=meta[0];
   document.getElementById('headerSub').textContent=meta[1];
-  const noFab=['home','ai','retouch','scripts'];
+  const noFab=['home','ai','retouch','scripts','settings'];
   document.getElementById('fabBtn').style.display=noFab.includes(v)?'none':'flex';
   toggleDrawer();
   refreshView(v);
@@ -483,7 +508,19 @@ function refreshView(v){
     case 'photo':renderPhotos(cv);break;
     case 'shootplan':renderShootPlans(cv);break;
     case 'retouch':renderRetouch(cv);break;
+    case 'settings':renderSettings(cv);break;
   }
+}
+function getBackupBanner(){
+  const lastBk=localStorage.getItem('beauty_wb_lastbackup');
+  if(!lastBk){
+    return '<div class="backup-banner" onclick="switchView(\'settings\')"><div class="backup-banner-icon">💾</div><div class="backup-banner-text">你还没有导出过备份！数据存在手机本地，<b>更新工作台前请先备份</b>，点击去备份 →</div></div>';
+  }
+  const days=Math.floor((Date.now()-parseInt(lastBk))/86400000);
+  if(days>=7){
+    return '<div class="backup-banner" onclick="switchView(\'settings\')"><div class="backup-banner-icon">⚠️</div><div class="backup-banner-text">上次备份已是<b>'+days+'天前</b>，建议重新导出备份以防丢失，点击去备份 →</div></div>';
+  }
+  return '';
 }
 // ============ HOME ============
 function renderHome(div){
@@ -509,7 +546,7 @@ function renderHome(div){
     pubHtml=pubToday.map(c=>'<div class="appt-item"><div class="appt-time">📅</div><div class="appt-info"><div class="appt-name">'+c.title+'</div><div class="appt-service">'+(c.platform||'全平台')+'</div></div><span class="appt-status '+(c.status==='published'?'completed':c.status==='drafting'?'confirmed':'cancelled')+'">'+(sll[c.status]||'计划中')+'</span></div>').join('');
   }else{pubHtml='<div class="empty-state" style="padding:20px"><div class="empty-icon">📋</div><p>今天没有发布计划</p></div>';}
   const coverStyle=homeCover?' style="background-image:linear-gradient(rgba(232,83,122,.5),rgba(240,98,146,.55)),url(\''+homeCover+'\')"':'';
-  div.innerHTML='<div class="home-cover"'+coverStyle+'><button class="cover-edit-btn" onclick="document.getElementById(\'homeCoverInput\').click()">🖼️ 换封面</button>'+(homeCover?'<button class="cover-edit-btn" style="left:14px;right:auto" onclick="clearHomeCover()">↺ 默认</button>':'')+'<input type="file" id="homeCoverInput" accept="image/*" style="display:none" onchange="applyHomeCover(this)"><div class="home-logo">💄</div><h2>欢迎来到龙丽莎的工作台</h2><div class="home-studio">🏪 珞莎美妆工作室</div><div class="home-date">'+dateStr+'</div></div><div class="summary-row"><div class="summary-card" onclick="switchView(\'schedule\')" style="cursor:pointer"><div class="summary-label">今日档期</div><div class="summary-value">'+todayAppts.length+'</div></div><div class="summary-card" onclick="switchView(\'customers\')" style="cursor:pointer"><div class="summary-label">客户总数</div><div class="summary-value">'+data.customers.length+'</div></div><div class="summary-card expense" onclick="switchView(\'inventory\')" style="cursor:pointer"><div class="summary-label">库存预警</div><div class="summary-value">'+lowStock.length+'</div></div><div class="summary-card '+(mi-me>=0?'income':'expense')+'" onclick="switchView(\'finance\')" style="cursor:pointer"><div class="summary-label">本月利润</div><div class="summary-value">¥'+(mi-me).toLocaleString()+'</div></div></div><div class="summary-row" style="grid-template-columns:1fr 1fr;margin-bottom:12px"><div class="summary-card" onclick="editFollowers()" style="cursor:pointer;background:#fff0f3"><div class="summary-label">🎵 抖音粉丝</div><div class="summary-value" style="font-size:18px;color:var(--primary)">'+(data.followers?.douyin||0).toLocaleString()+'</div></div><div class="summary-card" onclick="editFollowers()" style="cursor:pointer;background:#fff5f0"><div class="summary-label">📕 小红书粉丝</div><div class="summary-value" style="font-size:18px;color:#ff4d4f">'+(data.followers?.xiaohongshu||0).toLocaleString()+'</div></div></div><div class="card"><div class="card-header"><h3>📋 发布看板</h3><button class="btn btn-sm btn-outline" onclick="switchView(\'calendar\')">查看全部</button></div><div class="pub-board"><div class="pub-board-item"><div class="pb-num" style="color:var(--info)">'+pubPlanned+'</div><div class="pb-label">计划中</div></div><div class="pub-board-item"><div class="pb-num" style="color:var(--warning)">'+pubDrafting+'</div><div class="pb-label">创作中</div></div><div class="pub-board-item"><div class="pb-num" style="color:var(--success)">'+pubPublishedToday+'</div><div class="pb-label">今日已发</div></div><div class="pub-board-item"><div class="pb-num" style="color:var(--primary)">'+pubToday.length+'</div><div class="pb-label">今日计划</div></div></div>'+pubHtml+'</div><div class="card"><div class="card-header"><h3>📋 今日档期</h3><button class="btn btn-sm btn-outline" onclick="switchView(\'schedule\')">查看全部</button></div>'+apptHtml+'</div><div class="card"><div class="card-header"><h3>🚀 快速进入</h3></div><div class="quick-grid">'+quick.map(q=>'<div class="quick-btn" onclick="switchView(\''+q[0]+'\')"><span class="q-icon">'+q[1]+'</span>'+q[2]+'</div>').join('')+'</div></div>';
+  div.innerHTML='<div class="home-cover"'+coverStyle+'><button class="cover-edit-btn" onclick="document.getElementById(\'homeCoverInput\').click()">🖼️ 换封面</button>'+(homeCover?'<button class="cover-edit-btn" style="left:14px;right:auto" onclick="clearHomeCover()">↺ 默认</button>':'')+'<input type="file" id="homeCoverInput" accept="image/*" style="display:none" onchange="applyHomeCover(this)"><div class="home-logo">💄</div><h2>欢迎来到龙丽莎的工作台</h2><div class="home-studio">🏪 珞莎美妆工作室</div><div class="home-date">'+dateStr+'</div></div><div class="summary-row"><div class="summary-card" onclick="switchView(\'schedule\')" style="cursor:pointer"><div class="summary-label">今日档期</div><div class="summary-value">'+todayAppts.length+'</div></div><div class="summary-card" onclick="switchView(\'customers\')" style="cursor:pointer"><div class="summary-label">客户总数</div><div class="summary-value">'+data.customers.length+'</div></div><div class="summary-card expense" onclick="switchView(\'inventory\')" style="cursor:pointer"><div class="summary-label">库存预警</div><div class="summary-value">'+lowStock.length+'</div></div><div class="summary-card '+(mi-me>=0?'income':'expense')+'" onclick="switchView(\'finance\')" style="cursor:pointer"><div class="summary-label">本月利润</div><div class="summary-value">¥'+(mi-me).toLocaleString()+'</div></div></div><div class="summary-row" style="grid-template-columns:1fr 1fr;margin-bottom:12px"><div class="summary-card" onclick="editFollowers()" style="cursor:pointer;background:#fff0f3"><div class="summary-label">🎵 抖音粉丝</div><div class="summary-value" style="font-size:18px;color:var(--primary)">'+(data.followers?.douyin||0).toLocaleString()+'</div></div><div class="summary-card" onclick="editFollowers()" style="cursor:pointer;background:#fff5f0"><div class="summary-label">📕 小红书粉丝</div><div class="summary-value" style="font-size:18px;color:#ff4d4f">'+(data.followers?.xiaohongshu||0).toLocaleString()+'</div></div></div>'+getBackupBanner()+'<div class="card"><div class="card-header"><h3>📋 发布看板</h3><button class="btn btn-sm btn-outline" onclick="switchView(\'calendar\')">查看全部</button></div><div class="pub-board"><div class="pub-board-item"><div class="pb-num" style="color:var(--info)">'+pubPlanned+'</div><div class="pb-label">计划中</div></div><div class="pub-board-item"><div class="pb-num" style="color:var(--warning)">'+pubDrafting+'</div><div class="pb-label">创作中</div></div><div class="pub-board-item"><div class="pb-num" style="color:var(--success)">'+pubPublishedToday+'</div><div class="pb-label">今日已发</div></div><div class="pub-board-item"><div class="pb-num" style="color:var(--primary)">'+pubToday.length+'</div><div class="pb-label">今日计划</div></div></div>'+pubHtml+'</div><div class="card"><div class="card-header"><h3>📋 今日档期</h3><button class="btn btn-sm btn-outline" onclick="switchView(\'schedule\')">查看全部</button></div>'+apptHtml+'</div><div class="card"><div class="card-header"><h3>🚀 快速进入</h3></div><div class="quick-grid">'+quick.map(q=>'<div class="quick-btn" onclick="switchView(\''+q[0]+'\')"><span class="q-icon">'+q[1]+'</span>'+q[2]+'</div>').join('')+'</div></div>';
 }
 // ============ SCHEDULE ============
 function renderSchedule(div){
@@ -981,6 +1018,104 @@ function openTrendForm(){
   document.getElementById('modalOverlay').style.display='flex';}
 function saveTrend(){const tr={id:gid(),title:document.getElementById('fTrTi').value.trim(),source:document.getElementById('fTrSo').value,tags:document.getElementById('fTrTa').value.split(',').map(t=>t.trim()).filter(Boolean),notes:document.getElementById('fTrNo').value.trim(),savedAt:new Date().toISOString()};
   if(!tr.title){toast('请输入标题');return;}data.trends.unshift(tr);save();closeModal();refreshView('trends');toast('已添加');}
+// ============ SETTINGS & BACKUP ============
+function renderSettings(div){
+  const stats=[
+    ['客户资料',data.customers.length],['顾客档期',data.appointments.length],['产品库存',data.products.length],
+    ['收支记录',data.transactions.length],['选题库',data.topics.length],['脚本管理',data.scripts.length],
+    ['发布管理',data.contents.length],['客片管理',data.photos.length],['拍摄计划',data.shootPlans.length]
+  ];
+  const lastBk=localStorage.getItem('beauty_wb_lastbackup');
+  const bkTime=lastBk?new Date(parseInt(lastBk)):null;
+  const bkStr=bkTime?bkTime.getFullYear()+'-'+String(bkTime.getMonth()+1).padStart(2,'0')+'-'+String(bkTime.getDate()).padStart(2,'0')+' '+String(bkTime.getHours()).padStart(2,'0')+':'+String(bkTime.getMinutes()).padStart(2,'0'):'从未导出过';
+  const dataKB=(new Blob([JSON.stringify(data)]).size/1024).toFixed(1);
+  div.innerHTML='<div class="card"><div class="card-header"><h3>⚙️ 数据备份与恢复</h3></div>'+
+    '<div class="backup-warn">⚠️ <b>每次更新工作台前，请先点「导出备份」！</b><br>更新后如果数据丢了，点「导入恢复」选之前导出的文件就能找回来。</div>'+
+    '<button class="backup-btn backup-export" onclick="exportData()">📤 导出备份（保存到手机/云盘）</button>'+
+    '<button class="backup-btn backup-import" onclick="document.getElementById(\'importFile\').click()">📥 导入恢复（从备份文件恢复）</button>'+
+    '<input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">'+
+    '<div class="backup-time">📤 上次导出：'+bkStr+'</div>'+
+    '</div>'+
+    '<div class="card"><div class="card-header"><h3>📊 数据统计</h3></div><div>'+
+    stats.map(s=>'<div class="backup-stat"><span>'+s[0]+'</span><span class="v">'+s[1]+' 条</span></div>').join('')+
+    '<div class="backup-stat"><span>数据大小</span><span class="v">'+dataKB+' KB</span></div>'+
+    '</div></div>'+
+    '<div class="card"><div class="card-header"><h3>💡 使用说明</h3></div>'+
+    '<div style="padding:4px 0;font-size:13px;line-height:2;color:var(--text-secondary)">'+
+    '<p>📌 <b>导出备份</b>：点击后会弹出分享菜单，选「保存到文件」存到 iCloud 云盘。</p>'+
+    '<p>📌 <b>导入恢复</b>：点击后选之前导出的 .json 文件，数据就回来了。</p>'+
+    '<p>📌 <b>自动备份</b>：工作台每次保存时会在本地偷偷留一份备份，万一主数据丢了能自动恢复。</p>'+
+    '<p>📌 <b>换手机/换设备</b>：先在旧手机导出备份，在新手机导入即可。</p>'+
+    '<p>📌 <b>电脑和手机同步</b>：手机导出 → 电脑导入，或反过来。</p>'+
+    '</div></div>'+
+    '<div class="card"><div class="card-header"><h3>ℹ️ 关于数据存储</h3></div>'+
+    '<div style="padding:4px 0;font-size:12px;line-height:1.8;color:var(--text-secondary)">'+
+    '<p>你的所有数据（客户、收支、脚本等）都存在手机的浏览器本地存储里，不会上传到任何服务器。</p>'+
+    '<p>这意味着：<b>如果你删除了主屏幕上的工作台图标，数据可能会丢失</b>。</p>'+
+    '<p>所以：<b>每次让我更新工作台前，一定先导出备份！</b></p>'+
+    '<p>更新工作台的正确流程：导出备份 → 等我改好 → 打开新版本 → 导入恢复。</p>'+
+    '</div></div>';
+}
+function exportData(){
+  const exportObj={appVersion:STORAGE_KEY,exportDate:new Date().toISOString(),device:navigator.userAgent.slice(0,50),data:data};
+  const json=JSON.stringify(exportObj,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const filename='beauty-backup-'+todayStr()+'.json';
+  const file=new File([blob],filename,{type:'application/json'});
+  localStorage.setItem('beauty_wb_lastbackup',Date.now().toString());
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file],title:'美妆工作台数据备份'}).then(()=>{
+      toast('备份已分享，请保存到安全位置');
+      refreshView('settings');
+    }).catch(()=>{
+      // User cancelled share, try download fallback
+      downloadBackup(blob,filename);
+    });
+  }else{
+    downloadBackup(blob,filename);
+  }
+}
+function downloadBackup(blob,filename){
+  try{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=filename;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('备份已下载');
+    refreshView('settings');
+  }catch(e){
+    // Last resort: open in new tab
+    const url=URL.createObjectURL(blob);
+    window.open(url);
+    toast('备份已在新窗口打开，请保存');
+  }
+}
+function importData(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const imported=JSON.parse(e.target.result);
+      if(imported.data){
+        if(confirm('导入将覆盖当前所有数据！\n\n备份文件导出时间：'+(imported.exportDate||'未知')+'\n\n确定要继续吗？')){
+          data=imported.data;
+          const base={appointments:[],customers:[],products:[],transactions:[],trends:[...DEFAULT_TRENDS],topics:[],scripts:[],materials:[],contents:[],photos:[],shootPlans:[],followers:{douyin:0,xiaohongshu:0}};
+          Object.keys(base).forEach(k=>{if(data[k]===undefined)data[k]=base[k];});
+          if(!data.followers||typeof data.followers!=='object')data.followers={douyin:0,xiaohongshu:0};
+          data.followers={douyin:data.followers.douyin||0,xiaohongshu:data.followers.xiaohongshu||0};
+          save();closeModal();
+          localStorage.setItem('beauty_wb_lastbackup',Date.now().toString());
+          refreshView(currentView);
+          toast('✅ 数据导入成功');
+        }
+      }else{toast('❌ 文件格式错误，请选择正确的备份文件');}
+    }catch(err){toast('❌ 导入失败：文件格式错误');}
+  };
+  reader.readAsText(file);
+  input.value='';
+}
+
 // ============ INIT ============
 function init(){
   document.querySelectorAll('.nav-item,.nav-home').forEach(n=>{
