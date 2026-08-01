@@ -125,6 +125,14 @@ textarea { resize:vertical; min-height:60px; }
 @keyframes slideUp { from{transform:translateY(100%);} to{transform:translateY(0);} }
 .modal h3 { font-size:18px; margin-bottom:16px; }
 .modal-actions { display:flex; gap:10px; margin-top:20px; }
+/* Autocomplete - mobile-friendly replacement for datalist */
+.ac-wrapper { position:relative; }
+.ac-dropdown { position:absolute; top:100%; left:0; right:0; background:#fff; border:1.5px solid var(--primary); border-top:none; border-radius:0 0 var(--radius-sm) var(--radius-sm); max-height:180px; overflow-y:auto; z-index:400; display:none; box-shadow:0 6px 20px rgba(0,0,0,0.12); }
+.ac-dropdown.show { display:block; }
+.ac-item { padding:11px 13px; font-size:14px; cursor:pointer; border-bottom:1px solid var(--border); -webkit-tap-highlight-color:rgba(232,83,122,0.1); }
+.ac-item:last-child { border-bottom:none; }
+.ac-item:active,.ac-item:hover { background:var(--primary-light); color:var(--primary); }
+.ac-wrapper input { margin-bottom:0; }
 .search-bar { display:flex; gap:8px; margin-bottom:14px; }
 .search-bar input { flex:1; }
 .empty-state { text-align:center; padding:36px 20px; color:var(--text-secondary); }
@@ -635,13 +643,13 @@ function renderDayAppt(){
   c.innerHTML=h;
 }
 function openApptForm(a){editingId=a?a.id:null;
-  const custOpts=data.customers.map(c=>'<option value="'+escHtml(c.name)+'">'+escHtml(c.name)+'</option>').join('');
+  _acOptions.customerNames=data.customers.map(c=>c.name);
   const SERVICES=['新娘妆','日常妆','精致妆','网感妆','1v1课程'];
   const sl=['confirmed','completed','cancelled'];const sll={confirmed:'已确认',completed:'已完成',cancelled:'已取消'};
   const curName=a?(a.customerName||data.customers.find(x=>x.id===a.customerId)?.name||''):'';
   const curService=a?a.service||'':'';
-  document.getElementById('modalContent').innerHTML='<h3>'+(a?'编辑':'添加')+'档期</h3><div class="form-group"><label>客户姓名<span class="req-star">*</span>（可输入匹配已有客户）</label><input id="fAcn" list="apptCustList" value="'+escHtml(curName)+'" placeholder="输入或选择客户" autocomplete="off"><datalist id="apptCustList">'+custOpts+'</datalist></div><div class="form-row"><div class="form-group"><label>日期<span class="req-star">*</span></label><input type="date" id="fAd" value="'+(a?a.date:selectedDate)+'"></div><div class="form-group"><label>时间<span class="req-star">*</span></label><input type="time" id="fAt" value="'+(a?a.time:'10:00')+'"></div></div><div class="form-group"><label>服务项目<span class="req-star">*</span></label><select id="fAs"><option value="">--请选择服务--</option>'+SERVICES.map(sv=>'<option value="'+sv+'" '+(curService===sv?'selected':'')+'>'+sv+'</option>').join('')+'</select></div><div class="form-group"><label>状态</label><select id="fAst">'+sl.map(s=>'<option value="'+s+'" '+(a&&a.status===s?'selected':'')+'>'+sll[s]+'</option>').join('')+'</select></div><div class="form-group"><label>备注</label><textarea id="fAn">'+escHtml(a?a.notes||'':'')+'</textarea></div><div class="modal-actions"><button class="btn btn-outline btn-block" onclick="closeModal()">取消</button><button class="btn btn-primary btn-block" onclick="saveAppt()">保存</button></div>';
-  document.getElementById('modalOverlay').style.display='flex';}
+  document.getElementById('modalContent').innerHTML='<h3>'+(a?'编辑':'添加')+'档期</h3><div class="form-group"><label>客户姓名<span class="req-star">*</span>（输入即可匹配已有客户）</label><input id="fAcn" data-ac="customerNames" value="'+escHtml(curName)+'" placeholder="输入客户姓名自动匹配" autocomplete="off"></div><div class="form-row"><div class="form-group"><label>日期<span class="req-star">*</span></label><input type="date" id="fAd" value="'+(a?a.date:selectedDate)+'"></div><div class="form-group"><label>时间<span class="req-star">*</span></label><input type="time" id="fAt" value="'+(a?a.time:'10:00')+'"></div></div><div class="form-group"><label>服务项目<span class="req-star">*</span></label><select id="fAs"><option value="">--请选择服务--</option>'+SERVICES.map(sv=>'<option value="'+sv+'" '+(curService===sv?'selected':'')+'>'+sv+'</option>').join('')+'</select></div><div class="form-group"><label>状态</label><select id="fAst">'+sl.map(s=>'<option value="'+s+'" '+(a&&a.status===s?'selected':'')+'>'+sll[s]+'</option>').join('')+'</select></div><div class="form-group"><label>备注</label><textarea id="fAn">'+escHtml(a?a.notes||'':'')+'</textarea></div><div class="modal-actions"><button class="btn btn-outline btn-block" onclick="closeModal()">取消</button><button class="btn btn-primary btn-block" onclick="saveAppt()">保存</button></div>';
+  document.getElementById('modalOverlay').style.display='flex';initAutoCompletes();}
 function saveAppt(){const cname=document.getElementById('fAcn').value.trim();
   if(!cname){toast('请输入客户姓名');return;}
   const matched=data.customers.find(c=>c.name===cname);
@@ -849,11 +857,11 @@ function renderScripts(div){
 }
 function openScriptForm(s){
   editingId=s?s.id:null;
-  const topicOpts=data.topics.map(t=>'<option value="'+escHtml(t.title)+'">'+escHtml(t.title)+'</option>').join('');
+  _acOptions.topicNames=data.topics.map(t=>t.title);
   const tplOpts=SCRIPT_LIB.map(t=>'<option value="'+t.name+'" '+(s&&s.type===t.name?'selected':'')+'>'+t.icon+' '+t.name+'</option>').join('');
   const pf=['抖音','小红书','快手','微博','视频号','全平台'];
-  document.getElementById('modalContent').innerHTML='<h3>'+(s?'编辑':'新建')+'脚本</h3><div class="form-group"><label>标题*（可从选题库选择或手动输入）</label><input id="fScT" list="topicList" value="'+(s?escHtml(s.title):'')+'" placeholder="输入或选择选题"><datalist id="topicList">'+topicOpts+'</datalist></div><div class="form-row"><div class="form-group"><label>脚本类型</label><select id="fScType">'+tplOpts+'</select></div><div class="form-group"><label>平台</label><select id="fScP">'+pf.map(p=>'<option '+(s&&s.platform===p?'selected':'')+'>'+p+'</option>').join('')+'</select></div></div><div class="form-row"><div class="form-group"><label>日期</label><input type="date" id="fScD" value="'+(s?s.date||todayStr():todayStr())+'"></div><div class="form-group"><label>状态</label><select id="fScS">'+SCRIPT_STATUS.map(st=>'<option value="'+st.v+'" '+(s&&s.status===st.v?'selected':'')+'>'+st.l+'</option>').join('')+'</select></div></div><div class="form-group"><label>备注/大纲</label><textarea id="fScN" placeholder="脚本大纲、灵感...">'+(s?s.notes||'':'')+'</textarea></div><div class="modal-actions"><button class="btn btn-outline btn-block" onclick="closeModal()">取消</button><button class="btn btn-primary btn-block" onclick="saveScriptForm()">保存</button></div>';
-  document.getElementById('modalOverlay').style.display='flex';
+  document.getElementById('modalContent').innerHTML='<h3>'+(s?'编辑':'新建')+'脚本</h3><div class="form-group"><label>标题*（输入即可匹配已有选题）</label><input id="fScT" data-ac="topicNames" value="'+(s?escHtml(s.title):'')+'" placeholder="输入选题名称自动匹配" autocomplete="off"></div><div class="form-row"><div class="form-group"><label>脚本类型</label><select id="fScType">'+tplOpts+'</select></div><div class="form-group"><label>平台</label><select id="fScP">'+pf.map(p=>'<option '+(s&&s.platform===p?'selected':'')+'>'+p+'</option>').join('')+'</select></div></div><div class="form-row"><div class="form-group"><label>日期</label><input type="date" id="fScD" value="'+(s?s.date||todayStr():todayStr())+'"></div><div class="form-group"><label>状态</label><select id="fScS">'+SCRIPT_STATUS.map(st=>'<option value="'+st.v+'" '+(s&&s.status===st.v?'selected':'')+'>'+st.l+'</option>').join('')+'</select></div></div><div class="form-group"><label>备注/大纲</label><textarea id="fScN" placeholder="脚本大纲、灵感...">'+(s?s.notes||'':'')+'</textarea></div><div class="modal-actions"><button class="btn btn-outline btn-block" onclick="closeModal()">取消</button><button class="btn btn-primary btn-block" onclick="saveScriptForm()">保存</button></div>';
+  document.getElementById('modalOverlay').style.display='flex';initAutoCompletes();
 }
 function saveScriptForm(){
   const title=document.getElementById('fScT').value.trim();if(!title){toast('请输入标题');return;}
@@ -922,8 +930,8 @@ function renderScriptStoryboard(div){
   div.innerHTML='<div class="card"><div class="card-header"><h3>🎬 '+escHtml(s.title)+' - 分镜拍摄</h3><button class="btn btn-xs btn-outline" onclick="exitStoryboard()">← 返回列表</button></div><div style="margin-bottom:10px"><div class="form-row"><div class="form-group"><label>封面画面描述</label><input id="ssCover" placeholder="封面画面构思" value="'+escHtml(s.cover||'')+'"></div><div class="form-group"><label>封面贴字</label><input id="ssCoverText" placeholder="封面文字" value="'+escHtml(s.coverText||'')+'"></div></div></div>'+tableHtml+cardsHtml+'<button class="shoot-add-row-btn" onclick="addShootRow()">＋ 添加一个镜头</button><div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-primary" style="flex:1" onclick="saveStoryboard()">💾 保存分镜</button><button class="btn btn-outline" onclick="generateShootScript()">✨ 生成预览</button><button class="btn btn-outline export-xlsx-btn" onclick="exportShootXlsx()">📥 导出 Excel</button></div><div class="generated-script" id="generatedScript"></div></div>';
 }
 function getEmptyShootRow(){const r={};SHOOT_SCRIPT_COLS.forEach(c=>r[c.key]='');return r;}
-function addShootRow(){const s=data.scripts.find(x=>x.id===currentScriptId);if(!s)return;if(!s.storyboard)s.storyboard=[];s.storyboard.push(getEmptyShootRow());save();renderScriptStoryboard(document.getElementById('view-scripts'));toast('已添加一个镜头');}
-function delShootRow(idx){const s=data.scripts.find(x=>x.id===currentScriptId);if(!s||!s.storyboard)return;if(s.storyboard.length<=1){toast('至少保留一行');return;}s.storyboard.splice(idx,1);save();renderScriptStoryboard(document.getElementById('view-scripts'));toast('已删除');}
+function addShootRow(){const s=data.scripts.find(x=>x.id===currentScriptId);if(!s)return;const {rows}=collectShootData();if(!s.storyboard)s.storyboard=[];s.storyboard=rows;s.storyboard.push(getEmptyShootRow());save();renderScriptStoryboard(document.getElementById('view-scripts'));toast('已添加一个镜头');}
+function delShootRow(idx){const s=data.scripts.find(x=>x.id===currentScriptId);if(!s||!s.storyboard)return;const {rows}=collectShootData();s.storyboard=rows;if(s.storyboard.length<=1){toast('至少保留一行');return;}s.storyboard.splice(idx,1);save();renderScriptStoryboard(document.getElementById('view-scripts'));toast('已删除');}
 function collectShootData(){
   const s=data.scripts.find(x=>x.id===currentScriptId);if(!s)return{meta:{},rows:[]};
   const meta={cover:document.getElementById('ssCover')?.value?.trim()||'',coverText:document.getElementById('ssCoverText')?.value?.trim()||''};
@@ -1069,9 +1077,9 @@ function renderPhotos(div){
 function editClientPhoto(id){const p=data.photos.find(x=>x.id===id);if(p)openClientPhotoForm(p);}
 function delClientPhoto(id){if(!confirm('确定删除？'))return;data.photos=data.photos.filter(x=>x.id!==id);save();refreshView('photo');toast('已删除');}
 function openClientPhotoForm(p){editingId=p?p.id:null;
-  const custOpts=data.customers.map(c=>'<option value="'+c.name+'">').join('');
-  document.getElementById('modalContent').innerHTML='<h3>'+(p?'编辑':'添加')+'客片</h3><div class="form-group"><label>客户姓名*（可输入匹配已有客户）</label><input id="fPhn" list="phCustList" value="'+(p?escHtml(p.name):'')+'" placeholder="输入或选择客户"><datalist id="phCustList">'+custOpts+'</datalist></div><div class="form-group"><label>类型</label><select id="fPht">'+PHOTO_TYPE.map(t=>'<option '+(p&&p.type===t?'selected':'')+'>'+t+'</option>').join('')+'</select></div><div class="form-group"><label>拍摄日期</label><input type="date" id="fPhd" value="'+(p?p.shootDate:todayStr())+'"></div><div class="form-group"><label>状态</label><select id="fPhs">'+PHOTO_STATUS.map(s=>'<option '+(p&&p.status===s.l?'selected':'')+'>'+s.l+'</option>').join('')+'</select></div><div class="form-group"><label>客片照片(可选)</label><input type="file" id="fPhi" accept="image/*"></div><div class="form-group"><label>备注</label><textarea id="fPhno">'+(p?p.notes||'':'')+'</textarea></div><div class="modal-actions"><button class="btn btn-outline btn-block" onclick="closeModal()">取消</button><button class="btn btn-primary btn-block" onclick="saveClientPhoto()">保存</button></div>';
-  document.getElementById('modalOverlay').style.display='flex';}
+  _acOptions.photoCustNames=data.customers.map(c=>c.name);
+  document.getElementById('modalContent').innerHTML='<h3>'+(p?'编辑':'添加')+'客片</h3><div class="form-group"><label>客户姓名*（输入即可匹配已有客户）</label><input id="fPhn" data-ac="photoCustNames" value="'+(p?escHtml(p.name):'')+'" placeholder="输入客户姓名自动匹配" autocomplete="off"></div><div class="form-group"><label>类型</label><select id="fPht">'+PHOTO_TYPE.map(t=>'<option '+(p&&p.type===t?'selected':'')+'>'+t+'</option>').join('')+'</select></div><div class="form-group"><label>拍摄日期</label><input type="date" id="fPhd" value="'+(p?p.shootDate:todayStr())+'"></div><div class="form-group"><label>状态</label><select id="fPhs">'+PHOTO_STATUS.map(s=>'<option '+(p&&p.status===s.l?'selected':'')+'>'+s.l+'</option>').join('')+'</select></div><div class="form-group"><label>客片照片(可选)</label><input type="file" id="fPhi" accept="image/*"></div><div class="form-group"><label>备注</label><textarea id="fPhno">'+(p?p.notes||'':'')+'</textarea></div><div class="modal-actions"><button class="btn btn-outline btn-block" onclick="closeModal()">取消</button><button class="btn btn-primary btn-block" onclick="saveClientPhoto()">保存</button></div>';
+  document.getElementById('modalOverlay').style.display='flex';initAutoCompletes();}
 function saveClientPhoto(){
   const name=document.getElementById('fPhn').value.trim();const type=document.getElementById('fPht').value;const shootDate=document.getElementById('fPhd').value;const status=document.getElementById('fPhs').value;const notes=document.getElementById('fPhno').value.trim();const file=document.getElementById('fPhi').files[0];
   if(!name){toast('请输入客户姓名');return;}
@@ -1110,6 +1118,42 @@ function renderRetouch(div){
 function cycleRetouch(id){const p=data.photos.find(x=>x.id===id);if(!p)return;
   const order=['拍摄完成','修图中','已交付'];const ix=order.indexOf(p.status);p.status=order[(ix+1)%order.length];
   save();refreshView('retouch');toast('状态已更新');
+}
+// ============ AUTOCOMPLETE (mobile-friendly datalist replacement) ============
+let _acOptions={};
+function initAutoCompletes(){
+  document.querySelectorAll('[data-ac]').forEach(input=>{
+    if(input.dataset.acInit==='1')return;
+    input.dataset.acInit='1';
+    const key=input.dataset.ac;
+    const options=_acOptions[key]||[];
+    // Wrap input in relative container
+    const wrapper=document.createElement('div');
+    wrapper.className='ac-wrapper';
+    input.parentNode.insertBefore(wrapper,input);
+    wrapper.appendChild(input);
+    // Dropdown
+    const dd=document.createElement('div');
+    dd.className='ac-dropdown';
+    wrapper.appendChild(dd);
+    function renderItems(filter){
+      dd.innerHTML='';
+      const v=(filter||'').toLowerCase();
+      const matches=v?options.filter(o=>o.toLowerCase().includes(v)).slice(0,8):options.slice(0,8);
+      if(!matches.length){dd.classList.remove('show');return;}
+      matches.forEach(m=>{
+        const item=document.createElement('div');
+        item.className='ac-item';item.textContent=m;
+        item.addEventListener('mousedown',e=>{e.preventDefault();input.value=m;dd.classList.remove('show');});
+        item.addEventListener('touchstart',e=>{e.preventDefault();input.value=m;dd.classList.remove('show');});
+        dd.appendChild(item);
+      });
+      dd.classList.add('show');
+    }
+    input.addEventListener('focus',()=>{if(typeof isComposing==='undefined'||!isComposing)renderItems(input.value);});
+    input.addEventListener('input',()=>{if(typeof isComposing==='undefined'||!isComposing)renderItems(input.value);});
+    input.addEventListener('blur',()=>{setTimeout(()=>dd.classList.remove('show'),200);});
+  });
 }
 // ============ MODAL / QUICK ADD ============
 function closeModal(){document.getElementById('modalOverlay').style.display='none';editingId=null;}
